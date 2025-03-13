@@ -10,6 +10,11 @@ export const constantRouterMap = [
   {path: '/login', component: _import('login/index'), hidden: true},
   {path: '/404', component: _import('404'), hidden: true},
   {
+    path: '/article/edit',
+    component: () => import('../views/article/edit.vue'),
+    hidden: true
+  },
+  {
     path: '/',
     component: Layout,
     redirect: '/dashboard',
@@ -21,7 +26,7 @@ export const constantRouterMap = [
   }
 ]
 export default new Router({
-  // mode: 'history', //后端支持可开
+  mode: 'history', //后端支持可开
   scrollBehavior: () => ({y: 0}),
   routes: constantRouterMap
 })
@@ -50,16 +55,26 @@ export const asyncRouterMap = [
     meta: {title: '杂项', icon: 'table'},
     children: [
       {
-        path: '', name: '用户列表', component: _import('user/user'), meta: {title: '用户列表', icon: 'user'}, menu: 'user'
+        path: '',
+        name: '用户列表',
+        component: _import('user/user'),
+        meta: {title: '用户列表', icon: 'user'},
+        menu: 'user'
       },
       {
         path: 'role',
-        name: 'DeepSeek(无对话)',
+        name: '角色配置',
         component: _import('user/role'),
-        meta: {title: 'DeepSeek(无对话)', icon: 'password'},
+        meta: {title: '角色配置', icon: 'password'},
         menu: 'role'
       },
+      {
+        path: 'deepseek',
+        name: '小飞历险记',
+        component: _import('ai/deepseek'),
+        meta: {title: '小飞历险记', icon: 'password'},
+        menu: 'deepseek'
+      }
     ]
-  },
-  {path: '*', redirect: '/404', hidden: true}
+  }
 ]
