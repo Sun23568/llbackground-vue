@@ -1,390 +1,327 @@
 <template>
-  <div class="page-container">
-    <div class="chat-container">
-      <div class="chat-header">
-        <h2>deepseek原生</h2>
-      </div>
-      <div class="chat-body">
-        <simplebar style="height: 100%;">
-          <div class="response-area" id="response" style="white-space: pre-wrap;" @mouseenter="showCopyButton = true"
-               @mouseleave="showCopyButton = false">
-            {{ response }}
-            <!-- 新增: 复制和清空按钮 -->
-            <div v-if="isResponseComplete" class="button-group">
-              <el-button-group>
-                <el-button type="text" class="copy-button" @click="copyResponse">复制</el-button>
-                <el-button type="text" class="clear-button" @click="clearResponse">清空</el-button>
-              </el-button-group>
+  <div class="app-container">
+    <div class="filter-container">
+      <el-form>
+        <el-form-item>
+          <el-button type="success" icon="plus" v-permission="'role:add'" @click="showCreate">添加角色
+          </el-button>
+        </el-form-item>
+      </el-form>
+    </div>
+    <el-table :data="list" v-loading="listLoading"  border fit
+              highlight-current-row>
+      <el-table-column align="center" label="序号" width="80">
+        <template slot-scope="scope">
+          <span v-text="getIndex(scope.$index)"> </span>
+        </template>
+      </el-table-column>
+      <el-table-column align="center" label="角色" prop="roleName" width="150"></el-table-column>
+      <el-table-column align="center" label="用户">
+        <template slot-scope="scope">
+          <div v-for="user in scope.row.users">
+            <div v-text="user.nickname" style="display: inline-block;vertical-align: middle;"></div>
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column align="center" label="菜单&权限" width="420">
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.roleName===adminName" type="success">全部</el-tag>
+          <div v-else>
+            <div v-for="menu in scope.row.menus" style="text-align: left">
+              <span style="width: 100px;display: inline-block;text-align: right ">{{menu.menuName}}</span>
+              <el-tag v-for="perm in menu.permissions" :key="perm.permissionName" v-text="perm.permissionName"
+                      style="margin-right: 3px;"
+                      type="primary"></el-tag>
             </div>
           </div>
-        </simplebar>
+        </template>
+      </el-table-column>
+      <el-table-column align="center" label="管理" width="220">
+        <template slot-scope="scope">
+          <div v-if="scope.row.roleName!=='管理员'">
+            <el-button type="primary" icon="edit" @click="showUpdate(scope.$index)" v-permission="'role:update'">修改
+            </el-button>
+            <el-button v-permission="'role:delete'" type="danger"
+                       icon="delete"
+                       @click="removeRole(scope.$index)">
+              删除
+            </el-button>
+          </div>
+        </template>
+      </el-table-column>
+    </el-table>
+    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
+      <el-form class="small-space" :model="tempRole" label-position="left" label-width="100px"
+               style='width: 600px; margin-left:50px;'>
+        <el-form-item label="角色名称" required>
+          <el-input type="text" v-model="tempRole.roleName" style="width: 250px;">
+          </el-input>
+        </el-form-item>
+        <el-form-item label="菜单&权限" required>
+          <div v-for=" (menu,_index) in allPermission" :key="menu.menuName">
+            <span style="width: 100px;display: inline-block;">
+              <el-button :type="isMenuNone(_index)?'':(isMenuAll(_index)?'success':'primary')" size="mini"
+                         style="width:80px;"
+                         @click="checkAll(_index)">{{menu.menuName}}</el-button>
+            </span>
+            <div style="display: inline-block;margin-left:20px;">
+              <el-checkbox-group v-model="tempRole.permissions">
+                <el-checkbox v-for="perm in menu.permissions" :label="perm.id" @change="checkRequired(perm,_index)"
+                             :key="perm.id">
+                  <span :class="{requiredPerm:perm.requiredPerm===1}">{{perm.permissionName}}</span>
+                </el-checkbox>
+              </el-checkbox-group>
+            </div>
+          </div>
+          <p style="color:#848484;">说明:红色权限为对应菜单内的必选权限</p>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="dialogFormVisible = false">取 消</el-button>
+        <el-button v-if="dialogStatus==='create'" type="success" @click="createRole">创 建</el-button>
+        <el-button type="primary" v-else @click="updateRole">修 改</el-button>
       </div>
-      <div class="question-input">
-        <el-input
-          v-model="question"
-          size="medium"
-          placeholder="请输入你的问题"
-          @keyup.enter.native="askQuestion"
-        />
-        <el-button
-          type="primary"
-          @click="askQuestion"
-          :loading="isLoading"
-          :disabled="isLoading"
-        >
-          提问
-        </el-button>
-        <!-- 新增: 重复提问按钮 -->
-        <el-button
-          type="primary"
-          @click="repeatQuestion"
-          :loading="isLoading"
-          :disabled="isLoading || !lastQuestion"
-        >
-          重复提问
-        </el-button>
-      </div>
-    </div>
+    </el-dialog>
   </div>
 </template>
-
 <script>
-import SimpleBar from 'simplebar-vue';
-import 'simplebar/dist/simplebar.min.css';
-
-export default {
-  components: {
-    SimpleBar
-  },
-  data() {
-    return {
-      question: '',
-      response: '',
-      chatList: [],
-      isLoading: false,
-      showCopyButton: false, // 添加 showCopyButton 状态
-      isResponseComplete: false, // 添加 isResponseComplete 状态
-      lastQuestion: '' // 新增: 用于存储上一次的问题
-    };
-  },
-  methods: {
-    async askQuestion() {
-      if (this.isLoading) return; // 如果已经在加载中，不重复请求
-      this.response = ''; // 清空之前的回答
-      if (this.chatList.length > 5) {
-        this.chatList.shift();
-      }
-      this.chatList.push({
-        question: this.question,
-        response: ''
-      });
-
-      this.isLoading = true; // 设置加载状态
-
-      try {
-        const response = await fetch(`/api/ollama/chat`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json;charset=UTF-8',
-          },
-          body: JSON.stringify({
-            chatList: this.chatList,
-            modelName: 'luoli'
-          })
-        });
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder('utf-8');
-        let done = false;
-
-        while (!done) {
-          const {value, done: doneReading} = await reader.read();
-          done = doneReading;
-          if (value) {
-            const decodedValue = decoder.decode(value);
-            this.response += decodedValue.replaceAll('\\n', '\n');
-          }
-          this.chatList[this.chatList.length - 1].response = this.response;
-          this.isLoading = false; // 取消加载状态
-          this.isResponseComplete = true; // 设置回答完成状态
-          // 新增: 清空提问框内容
-          this.question = '';
-          // 新增: 存储上一次的问题
-          this.lastQuestion = this.chatList[this.chatList.length - 1].question;
-        }
-      } catch (error) {
-        this.isLoading = false; // 取消加载状态
-        this.isResponseComplete = true; // 设置回答完成状态
-        // 新增: 清空提问框内容
-        this.question = '';
+  export default {
+    data() {
+      return {
+        list: [],//表格的数据
+        allPermission: [],
+        listLoading: false,//数据加载等待动画
+        dialogStatus: 'create',
+        dialogFormVisible: false,
+        textMap: {
+          update: '编辑',
+          create: '新建角色'
+        },
+        tempRole: {
+          roleName: '',
+          roleId: '',
+          permissions: [],
+        },
+        adminName: '管理员'
       }
     },
-    async askQuestion1() {
-      if (this.isLoading) return; // 如果已经在加载中，不重复请求
-      this.response = ''; // 清空之前的回答
-      if (this.chatList.length > 5) {
-        this.chatList.shift();
-      }
-      this.chatList.push({
-        question: this.question,
-        response: ''
-      });
-
-      this.isLoading = true; // 设置加载状态
-
-      try {
+    created() {
+      this.getList();
+      this.getAllPermisson();
+    },
+    methods: {
+      getAllPermisson() {
+        //查询所有权限
+        this.api({
+          url: "/user/listAllPermission",
+          method: "get"
+        }).then(data => {
+          this.allPermission = data.list;
+        })
+      },
+      getList() {
+        //查询列表
+        this.listLoading = true;
+        this.api({
+          url: "/user/listRole",
+          method: "get"
+        }).then(data => {
+          this.listLoading = false;
+          this.list = data.list;
+        })
+      },
+      getIndex($index) {
+        //表格序号
+        return $index + 1
+      },
+      showCreate() {
+        //显示新增对话框
+        this.tempRole.roleName = '';
+        this.tempRole.roleId = '';
+        this.tempRole.permissions = [];
+        this.dialogStatus = "create"
+        this.dialogFormVisible = true
+      },
+      showUpdate($index) {
+        let role = this.list[$index];
+        this.tempRole.roleName = role.roleName;
+        this.tempRole.roleId = role.roleId;
+        this.tempRole.permissions = [];
+        for (let i = 0; i < role.menus.length; i++) {
+          let perm = role.menus[i].permissions;
+          for (let j = 0; j < perm.length; j++) {
+            this.tempRole.permissions.push(perm[j].permissionId);
+          }
+        }
+        this.dialogStatus = "update"
+        this.dialogFormVisible = true
+      },
+      createRole() {
+        if (!this.checkRoleNameUnique()) {
+          return;
+        }
+        if (!this.checkPermissionNum()) {
+          return;
+        }
         //添加新角色
-        const response = await fetch(
-          '/api/ollama/chat', {
-            method: "POST",
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            // data: {
-            //   chatList: this.chatList,
-            //   modelName: 'luoli'
-            // }
-            body: JSON.stringify({
-              model: 'luoli',
-              messages: [{
-                role: 'user',
-                content: '你好'
-              }],
-              stream: true
-            })
-          }
-        );
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder('utf-8');
-        let done = false;
-
-        while (!done) {
-          const {value, done: doneReading} = await reader.read();
-          done = doneReading;
-          if (value) {
-            const decodedValue = decoder.decode(value, {stream: !done});
-            console.log(decodedValue);
+        this.api({
+          url: "/user/addRole",
+          method: "post",
+          data: this.tempRole
+        }).then(() => {
+          this.getList();
+          this.dialogFormVisible = false
+        })
+      },
+      updateRole() {
+        if (!this.checkRoleNameUnique(this.tempRole.roleId)) {
+          return;
+        }
+        if (!this.checkPermissionNum()) {
+          return;
+        }
+        //修改角色
+        this.api({
+          url: "/user/updateRole",
+          method: "post",
+          data: this.tempRole
+        }).then(() => {
+          this.getList();
+          this.dialogFormVisible = false
+        })
+      },
+      checkPermissionNum() {
+        //校验至少有一种权限
+        if (this.tempRole.permissions.length === 0) {
+          this.$message.error("请至少选择一种权限");
+          return false;
+        }
+        return true;
+      },
+      checkRoleNameUnique(roleId) {
+        //校验名称重复
+        let roleName = this.tempRole.roleName;
+        if (!roleName) {
+          this.$message.error("请填写角色名称");
+          return false;
+        }
+        let roles = this.list;
+        let result = true;
+        for (let j = 0; j < roles.length; j++) {
+          if (roles[j].roleName === roleName && (!roleId || roles[j].roleId !== roleId  )) {
+            this.$message.error("角色名称已存在");
+            result = false;
+            break;
           }
         }
-      } catch (error) {
-        this.isLoading = false; // 取消加载状态
-        this.isResponseComplete = true; // 设置回答完成状态
-        // 新增: 清空提问框内容
-        this.question = '';
-      }
-    },
-
-    copyResponse() {
-      navigator.clipboard.writeText(this.response).then(() => {
-        this.$message.success('复制成功');
-      }).catch(err => {
-        this.$message.error('复制失败');
-      });
-    },
-
-    // 新增: 清空回答框内容的方法
-    clearResponse() {
-      this.response = '';
-    },
-
-    // 新增: 重复提问方法
-    repeatQuestion() {
-      if (this.lastQuestion) {
-        // 将最后一个问题删除
-        this.chatList.pop();
-        this.question = this.lastQuestion;
-        this.askQuestion();
+        return result;
+      },
+      removeRole($index) {
+        let _vue = this;
+        let role = _vue.list[$index];
+        _vue.api({
+            url: "/user/deleteRole",
+            method: "post",
+            data: {
+              roleId: role.roleId
+            }
+        }).then(() => {
+            _vue.list.splice($index,1);
+        }).catch(e => {
+        })
+      },
+      isMenuNone(_index) {
+        //判断本级菜单内的权限是否一个都没选
+        let menu = this.allPermission[_index].permissions;
+        let result = true;
+        for (let j = 0; j < menu.length; j++) {
+          if (this.tempRole.permissions.indexOf(menu[j].id) > -1) {
+            result = false;
+            break;
+          }
+        }
+        return result;
+      },
+      isMenuAll(_index) {
+        //判断本级菜单内的权限是否全选了
+        let menu = this.allPermission[_index].permissions;
+        let result = true;
+        for (let j = 0; j < menu.length; j++) {
+          if (this.tempRole.permissions.indexOf(menu[j].id) < 0) {
+            result = false;
+            break;
+          }
+        }
+        return result;
+      },
+      checkAll(_index) {
+        //点击菜单   相当于全选按钮
+        let v = this;
+        if (v.isMenuAll(_index)) {
+          //如果已经全选了,则全部取消
+          v.noPerm(_index);
+        } else {
+          //如果尚未全选,则全选
+          v.allPerm(_index);
+        }
+      },
+      allPerm(_index) {
+        //全部选中
+        let menu = this.allPermission[_index].permissions;
+        for (let j = 0; j < menu.length; j++) {
+          this.addUnique(menu[j].id, this.tempRole.permissions)
+        }
+      },
+      noPerm(_index) {
+        //全部取消选中
+        let menu = this.allPermission[_index].permissions;
+        for (let j = 0; j < menu.length; j++) {
+          let idIndex = this.tempRole.permissions.indexOf(menu[j].id);
+          if (idIndex > -1) {
+            this.tempRole.permissions.splice(idIndex, 1);
+          }
+        }
+      },
+      addUnique(val, arr) {
+        //数组内防重复地添加元素
+        let _index = arr.indexOf(val);
+        if (_index < 0) {
+          arr.push(val);
+        }
+      },
+      checkRequired(_perm, _index) {
+        //本方法会在勾选状态改变之后触发
+        let permId = _perm.id;
+        if (this.tempRole.permissions.indexOf(permId) > -1) {
+          //选中事件
+          //如果之前未勾选本权限,现在勾选完之后,tempRole里就会包含本id
+          //那么就要将必选的权限勾上
+          this.makeReuqiredPermissionChecked(_index);
+        } else {
+          //取消选中事件
+          if (_perm.requiredPerm === 1) {
+            //如果是必勾权限,就把本菜单的权限全部移出
+            //(其实也可以提示用户本权限是菜单里的必选,请先取消勾选另外几个权限,交互太麻烦,此处就直接全部取消选中了)
+            this.noPerm(_index);
+          }
+        }
+      },
+      makeReuqiredPermissionChecked(_index) {
+        //将本菜单必选的权限勾上
+        let menu = this.allPermission[_index].permissions;
+        for (let j = 0; j < menu.length; j++) {
+          let perm = menu[j];
+          if (perm.requiredPerm === 1) {
+            //找到本菜单的必选权限,将其勾上
+            this.addUnique(perm.id, this.tempRole.permissions)
+          }
+        }
       }
     }
   }
-};
 </script>
-
 <style scoped>
-body, html {
-  height: 100%;
-  margin: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.page-container {
-  background-image: url('../../assets/banner-background.jpg'); /* 确保路径正确 */
-  background-size: cover; /* 背景图片覆盖整个屏幕 */
-  background-position: center; /* 背景图片居中 */
-  background-repeat: no-repeat; /* 防止背景图片重复 */
-  height: 100vh; /* 设置容器高度为视口高度 */
-  width: 100%; /* 确保容器宽度为视口宽度 */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.chat-container {
-  max-width: 800px;
-  width: 90%; /* 使用相对单位 */
-  padding: 20px;
-  border: 1px solid #ebeef5;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin: 0 auto; /* 确保水平居中 */
-  height: 80vh; /* 设置固定高度 */
-  background-color: rgba(255, 255, 255, 0.5); /* 设置背景颜色为半透明 */
-  position: relative; /* 确保子元素的定位相对于 chat-container */
-}
-
-.chat-header {
-  text-align: center;
-  margin-bottom: 5px; /* 修改: 将 margin-bottom 从 10px 改为 5px */
-}
-
-.chat-body {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  flex: 1; /* 使 chat-body 占据剩余空间 */
-  height: 100%; /* 确保 chat-body 占据 chat-container 的高度 */
-  position: relative; /* 确保子元素的定位相对于 chat-body */
-}
-
-.response-area {
-  background-color: #f5f7fa;
-  padding: 15px;
-  border-radius: 4px;
-  border: 1px solid #ebeef5;
-  overflow-y: auto; /* 添加滚动条 */
-  flex: 1; /* 使 response-area 占据剩余空间 */
-  max-height: calc(94% - 94px); /* 修改: 减少最大高度，确保底部留出 question-input 的空间 */
-  position: absolute; /* 绝对定位 */
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 60px; /* 确保底部留出 question-input 的空间 */
-  background-color: rgba(255, 255, 255, 0.5); /* 设置背景颜色为半透明 */
-  position: relative; /* 绝对定位 */
-}
-
-.button-group {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1;
-}
-
-.copy-button, .clear-button {
-  margin-left: 5px; /* 添加间距 */
-}
-
-.copy-button:hover, .clear-button:hover {
-}
-
-.response-area:hover .copy-button,
-.response-area:hover .clear-button {
-  display: inline-block; /* 修改: 使用 inline-block 使按钮排列在一行 */
-}
-
-.copy-button {
-  background-color: transparent; /* 保持透明背景 */
-  color: #409EFF; /* 保持文字颜色 */
-  border: none; /* 保持无边框 */
-  font-size: 14px; /* 保持字体大小 */
-  cursor: pointer; /* 保持鼠标指针 */
-  transition: color 0.3s ease; /* 保持过渡效果 */
-}
-
-.copy-button:hover {
-  color: #66B1FF; /* 修改: 鼠标悬停时的文字颜色 */
-}
-
-.clear-button {
-  background-color: transparent; /* 保持透明背景 */
-  color: #409EFF; /* 保持文字颜色 */
-  border: none; /* 保持无边框 */
-  font-size: 14px; /* 保持字体大小 */
-  cursor: pointer; /* 保持鼠标指针 */
-  transition: color 0.3s ease; /* 保持过渡效果 */
-}
-
-.clear-button:hover {
-  color: #66B1FF; /* 修改: 鼠标悬停时的文字颜色 */
-}
-
-.question-input {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background-color: rgba(255, 255, 255, 0.5); /* 设置背景颜色为半透明 */
-  padding: 10px;
-  border-radius: 4px;
-  border: 1px solid #ebeef5;
-  position: absolute; /* 绝对定位 */
-  bottom: 0; /* 固定在底部 */
-  left: 0;
-  right: 0;
-  z-index: 1; /* 确保在最上层 */
-}
-
-.el-input {
-  flex: 1;
-}
-
-/* 自定义滚动条样式 */
-.response-area::-webkit-scrollbar {
-  width: 8px; /* 滚动条宽度 */
-}
-
-.response-area::-webkit-scrollbar-thumb {
-  background-color: #888; /* 滚动条颜色 */
-  border-radius: 4px; /* 圆角 */
-}
-
-.response-area::-webkit-scrollbar-thumb:hover {
-  background-color: #555; /* 鼠标悬停时的颜色 */
-}
-
-.response-area::-webkit-scrollbar-track {
-  background-color: #f1f1f1; /* 轨道颜色 */
-}
-
-.copy-button {
-  display: none;
-  background-color: #409EFF; /* 还原默认背景色 */
-  color: #FFFFFF; /* 还原默认文字颜色 */
-  border: none; /* 还原默认边框 */
-  border-radius: 4px; /* 还原默认圆角 */
-  padding: 5px 10px; /* 还原默认内边距 */
-  transition: background-color 0.3s ease; /* 还原默认过渡效果 */
-  font-size: 14px; /* 还原默认字体大小 */
-}
-
-.response-area:hover .copy-button {
-  display: inline-block; /* 修改: 使用 inline-block 使按钮排列在一行 */
-}
-
-.copy-button:hover {
-  background-color: #66B1FF; /* 还原默认鼠标悬停时的背景色 */
-}
-
-.clear-button {
-  display: none;
-  background-color: #409EFF; /* 还原默认背景色 */
-  color: #FFFFFF; /* 还原默认文字颜色 */
-  border: none; /* 还原默认边框 */
-  border-radius: 4px; /* 还原默认圆角 */
-  padding: 5px 10px; /* 还原默认内边距 */
-  transition: background-color 0.3s ease; /* 还原默认过渡效果 */
-  font-size: 14px; /* 还原默认字体大小 */
-}
-
-.response-area:hover .clear-button {
-  display: inline-block; /* 修改: 使用 inline-block 使按钮排列在一行 */
-}
-
-.clear-button:hover {
-  background-color: #66B1FF; /* 还原默认鼠标悬停时的背景色 */
-}
+  .requiredPerm {
+    color: #ff0e13;
+  }
 </style>
-
