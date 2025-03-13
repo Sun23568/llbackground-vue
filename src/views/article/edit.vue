@@ -90,8 +90,25 @@ export default {
       // 关闭当前tab页的逻辑，这里假设使用的是浏览器的关闭标签页功能
       window.close();
     },
-    submit() { // 新增方法，提交按钮功能
-      console.log(this.content); // 打印quill-editor内容
+    submit() {
+      this.api({
+        url: '/article/updateArticle',
+        method: 'post',
+        data: {
+          articleId: this.$route.query.id,
+          title: this.title,
+          content: this.content,
+          craft: '0'
+        }
+      }).then(data => {
+        console.log(data);
+        if (data.code === 200) {
+          this.$message({
+            message: '保存成功',
+            type: 'success'
+          });
+       } else {}
+      })
     }
   }
 }
