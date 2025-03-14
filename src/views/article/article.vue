@@ -46,6 +46,12 @@ export default {
   },
   created() {
     this.getList();
+    // 监听来自 edit.vue 的消息
+    window.addEventListener('message', this.handleMessage);
+  },
+  beforeDestroy() {
+    // 移除消息监听
+    window.removeEventListener('message', this.handleMessage);
   },
   methods: {
     viewContent(row) {
@@ -92,7 +98,14 @@ export default {
       //打开新的 Tab 页
       const article = this.list[$index];
       window.open(`/article/edit?id=${article.id}`, '_blank');    },
-
+    handleMessage(event) {
+      if (event.data === 'articleSaved') {
+        this.$message({
+          message: '文章保存成功',
+          type: 'success'
+        });
+      }
+    }
   }
 }
 </script>

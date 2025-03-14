@@ -73,10 +73,9 @@ export default {
         method: 'get',
         params: {
           articleId: articleId,
-          craft: '1'
+          craft: '0'
         }
       }).then(data => {
-        console.log(data);
         this.title = data.TITLE;
         this.content = data.CONTENT;
       });
@@ -101,13 +100,14 @@ export default {
           craft: '0'
         }
       }).then(data => {
-        console.log(data);
-        if (data.code === 200) {
-          this.$message({
-            message: '保存成功',
-            type: 'success'
-          });
-       } else {}
+        this.$message({
+          message: '保存成功',
+          type: 'success'
+        });
+        // 关闭当前tab页的逻辑
+        window.close();
+        // 发送消息到 article.vue
+        window.opener.postMessage('articleSaved', '*');
       })
     }
   }
