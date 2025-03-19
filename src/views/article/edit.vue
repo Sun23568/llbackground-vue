@@ -130,10 +130,28 @@ export default {
       event.preventDefault(); // 阻止默认行为
       const img = event.target;
       // 创建一个新的图片元素用于放大显示
+      const container = document.createElement('div');
+      container.style.position = 'fixed';
+      container.style.top = '0';
+      container.style.left = '0';
+      container.style.width = '100vw';
+      container.style.height = '100vh';
+      container.style.zIndex = '1000';
+      container.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+      document.body.appendChild(container);
+      const containerInner = document.createElement('div');
+      containerInner.style.width = '100%';
+      containerInner.style.height = '100%';
+      containerInner.style.zIndex = '1001';
+      containerInner.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+      containerInner.style.position = 'relative';
+      container.appendChild(containerInner);
+
+
       const expandedImg = document.createElement('img');
       expandedImg.src = img.src;
-      expandedImg.classList.add('expanded');
-      expandedImg.style.position = 'fixed';
+      // expandedImg.classList.add('expanded');
+      expandedImg.style.position = 'absolute';
       expandedImg.style.top = '50%';
       expandedImg.style.left = '50%';
       expandedImg.style.transform = 'translate(-50%, -50%)';
@@ -141,7 +159,7 @@ export default {
       expandedImg.style.maxWidth = '90%';
       expandedImg.style.maxHeight = '90%';
       expandedImg.style.boxShadow = '0 2px 12px 0 rgba(0, 0, 0, 0.5)';
-      document.body.appendChild(expandedImg);
+      containerInner.appendChild(expandedImg);
 
       let scale = 1;
       const zoomFactor = 0.1;
@@ -158,38 +176,28 @@ export default {
 
       expandedImg.addEventListener('wheel', handleWheel);
 
-      // 添加拖拽功能
-      let offsetX, offsetY;
-
-      const handleMouseDown = (e) => {
-        offsetX = e.clientX - expandedImg.offsetLeft;
-        offsetY = e.clientY - expandedImg.offsetTop;
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
-      };
-
-      const handleMouseMove = (e) => {
-        expandedImg.style.left = `${e.clientX - offsetX}px`;
-        expandedImg.style.top = `${e.clientY - offsetY}px`;
-        console.log(expandedImg.style.left);
-        console.log(expandedImg.style.top);
-        return false;
-      };
-
-      const handleMouseUp = () => {
-        console.log('Mouse up');
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-
-      expandedImg.addEventListener('mousedown', handleMouseDown);
+      containerInner.onmousedown = e => {
+        console.log('鼠标按下', e.offsetX, e.offsetY)
+        const offsetX = e.offsetX;
+        const offsetY = e.offsetY;
+        containerInner.onmousemove = e => {
+          console.log('鼠标移动', e.clientX, e.clientY)
+          expandedImg.style.left = `${e.clientX - offsetX}px`;
+          expandedImg.style.top = `${e.clientY - offsetY}px`;
+        };
+        containerInner.onmouseup = () => {
+          console.log('鼠标抬起')
+          containerInner.onmousemove = null;
+          containerInner.onmouseup = null;
+        };
+      }
 
       // 点击放大后的图片关闭
       expandedImg.addEventListener('click', () => {
-        document.body.removeChild(expandedImg);
+        document.body.removeChild(container);
         document.body.removeEventListener('wheel', handleWheel);
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('mousemove');
+        document.removeEventListener('mouseup');
       });
     }
   }
