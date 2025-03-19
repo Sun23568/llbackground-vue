@@ -13,7 +13,12 @@
       <el-table-column align="left" prop="title" label="文章标题" style="width: 60px;"></el-table-column>
       <el-table-column align="center" label="管理" width="200">
         <template slot-scope="scope">
-          <el-button type="primary" icon="edit" @click="openEditTab(scope.$index)" v-permission="'article:update'">修改</el-button>
+          <el-button type="primary" icon="edit" @click="openTab(scope.row.id, 'edit')" v-permission="'article:update'">
+            修改
+          </el-button>
+          <el-button type="primary" icon="edit" @click="openTab(scope.row.id, 'view')" v-permission="'article:update'">
+            查看
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -55,7 +60,7 @@ export default {
   },
   methods: {
     viewContent(row) {
-      console.log(row, 6666666666);
+      this.openTab(row.id, 'view');
     },
     getList() {
       //查询列表
@@ -94,10 +99,10 @@ export default {
       this.dialogStatus = "create"
       this.dialogFormVisible = true
     },
-    openEditTab($index) {
+    openTab(articleId, mode) {
       //打开新的 Tab 页
-      const article = this.list[$index];
-      window.open(`/article/edit?id=${article.id}`, '_blank');    },
+      window.open(`/#/article/edit?id=${articleId}&mode=${mode}`, '_blank');
+    },
     handleMessage(event) {
       if (event.data === 'articleSaved') {
         this.$message({

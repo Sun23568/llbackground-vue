@@ -4,14 +4,21 @@
     <div class="navbar-spacing"></div> <!-- 添加间距 -->
     <div class="form-container"> <!-- 新增容器 -->
       <el-form label-position="left">
-        <el-form-item label="标题:" class="form-item-class">
-          <el-input type="text" id="title" v-model="title" placeholder="请输入文章标题" class="full-width-input"/>
-        </el-form-item>
-        <hr class="separator"/>
-        <quill-editor ref="myQuillEditor" v-model="content" :options="editorOption" @change="onTextChange"/>
+        <div v-if="!viewMode">
+          <el-form-item label="标题:" class="form-item-class" v-if="!viewMode">
+            <el-input type="text" id="title" v-model="title" placeholder="请输入文章标题" class="full-width-input"/>
+          </el-form-item>
+          <hr class="separator"/>
+          <quill-editor ref="myQuillEditor" v-model="content" :options="editorOption" @change="onTextChange"/>
+        </div>
+        <div v-if="viewMode">
+          <span class="title-display">{{ title }}</span>
+          <hr class="separator"/>
+          <div class="ql-editor" v-html="content"></div>
+        </div>
       </el-form>
     </div> <!-- 新增容器结束 -->
-    <div class="floating-bar"> <!-- 新增悬浮栏 -->
+    <div class="floating-bar" v-if="!viewMode"> <!-- 新增悬浮栏 -->
       <span>字数: {{ wordCount }}</span>
       <el-button type="text" @click="cancel">取消</el-button>
       <el-button type="primary" @click="submit">提交</el-button>
@@ -59,13 +66,13 @@ export default {
         },
         placeholder: '在这里编辑内容。。。',
         theme: 'snow'  // or 'bubble'
-      }
+      },
+      viewMode: true
     }
   },
   mounted() {
-    // 获取 URL 参数 id
-    const urlParams = new URLSearchParams(window.location.search);
-    const articleId = urlParams.get('id');
+    const articleId = this.$route.query.id;
+    this.viewMode = this.$route.query.mode !== 'edit';
     // 获取文章信息
     if (articleId) {
       this.api({
@@ -76,8 +83,11 @@ export default {
           craft: '0'
         }
       }).then(data => {
-        this.title = data.TITLE;
-        this.content = data.CONTENT;
+        this.title = data.title;
+        this.content = data.content;
+        this.$nextTick(() => {
+          this.addImageClickListeners();
+        });
       });
     }
   },
@@ -109,6 +119,78 @@ export default {
         // 发送消息到 article.vue
         window.opener.postMessage('articleSaved', '*');
       })
+    },
+    addImageClickListeners() {
+      const images = this.$el.querySelectorAll('.ql-editor img');
+      images.forEach(img => {
+        img.addEventListener('dblclick', this.toggleImageSize);
+      });
+    },
+    toggleImageSize(event) {
+      event.preventDefault(); // 阻止默认行为
+      const img = event.target;
+      // 创建一个新的图片元素用于放大显示
+      const expandedImg = document.createElement('img');
+      expandedImg.src = img.src;
+      expandedImg.classList.add('expanded');
+      expandedImg.style.position = 'fixed';
+      expandedImg.style.top = '50%';
+      expandedImg.style.left = '50%';
+      expandedImg.style.transform = 'translate(-50%, -50%)';
+      expandedImg.style.zIndex = '1001';
+      expandedImg.style.maxWidth = '90%';
+      expandedImg.style.maxHeight = '90%';
+      expandedImg.style.boxShadow = '0 2px 12px 0 rgba(0, 0, 0, 0.5)';
+      document.body.appendChild(expandedImg);
+
+      let scale = 1;
+      const zoomFactor = 0.1;
+
+      const handleWheel = (event) => {
+        event.preventDefault();
+        if (event.deltaY < 0) {
+          scale += zoomFactor;
+        } else {
+          scale -= zoomFactor;
+        }
+        expandedImg.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      };
+
+      expandedImg.addEventListener('wheel', handleWheel);
+
+      // 添加拖拽功能
+      let offsetX, offsetY;
+
+      const handleMouseDown = (e) => {
+        offsetX = e.clientX - expandedImg.offsetLeft;
+        offsetY = e.clientY - expandedImg.offsetTop;
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+      };
+
+      const handleMouseMove = (e) => {
+        expandedImg.style.left = `${e.clientX - offsetX}px`;
+        expandedImg.style.top = `${e.clientY - offsetY}px`;
+        console.log(expandedImg.style.left);
+        console.log(expandedImg.style.top);
+        return false;
+      };
+
+      const handleMouseUp = () => {
+        console.log('Mouse up');
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      expandedImg.addEventListener('mousedown', handleMouseDown);
+
+      // 点击放大后的图片关闭
+      expandedImg.addEventListener('click', () => {
+        document.body.removeChild(expandedImg);
+        document.body.removeEventListener('wheel', handleWheel);
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      });
     }
   }
 }
@@ -178,5 +260,29 @@ export default {
 
 .floating-bar span {
   margin-right: 20px;
+}
+
+.title-display {
+  font-size: 56px;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 20px;
+}
+
+/deep/ .ql-editor img {
+  max-width: 100%;
+  height: auto;
+  cursor: pointer; /* 添加鼠标指针样式 */
+}
+
+/deep/ .ql-editor img.expanded {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1001;
+  max-width: 90%;
+  max-height: 90%;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.5);
 }
 </style>
