@@ -14,7 +14,9 @@
         <div v-if="viewMode">
           <span class="title-display">{{ title }}</span>
           <hr class="separator"/>
-          <div class="ql-editor" v-html="content"></div>
+          <quill-content :content="content"></quill-content>
+
+<!--          <div class="ql-editor" v-html="content"></div>-->
         </div>
       </el-form>
     </div> <!-- 新增容器结束 -->
@@ -45,6 +47,12 @@ export default {
       content: '',
       wordCount: 0, // 新增字数统计
       editorOption: {
+        formats: {
+          link: {
+            color: '#1890ff',
+            underline: true
+          }
+        },
         // 富文本编辑器配置
         modules: {
           toolbar: [
@@ -60,7 +68,6 @@ export default {
             [{'color': []}, {'background': []}],
             [{'font': []}],
             [{'align': []}],
-            ['clean'],
             ['link', 'image', 'video']
           ]
         },
@@ -72,7 +79,7 @@ export default {
   },
   mounted() {
     const articleId = this.$route.query.id;
-    this.viewMode = this.$route.query.mode !== 'edit';
+    this.viewMode = this.$route.query.mode !== 'edit' && articleId;
     // 获取文章信息
     if (articleId) {
       this.api({
@@ -182,8 +189,8 @@ export default {
         const offsetY = e.offsetY;
         containerInner.onmousemove = e => {
           console.log('鼠标移动', e.clientX, e.clientY)
-          expandedImg.style.left = `${e.clientX - offsetX}px`;
-          expandedImg.style.top = `${e.clientY - offsetY}px`;
+          expandedImg.style.left = `${e.clientX - offsetX + expandedImg.offsetWidth / 2}px`;
+          expandedImg.style.top = `${e.clientY - offsetY + expandedImg.offsetHeight / 2}px`;
         };
         containerInner.onmouseup = () => {
           console.log('鼠标抬起')
@@ -251,11 +258,11 @@ export default {
   margin: 0 auto;
 }
 
-.floating-bar { /* 新增悬浮栏样式 */
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+.floating-bar { /* 修改悬浮栏样式 */
+  position: relative; /* 改为相对定位 */
+  bottom: auto; /* 移除固定定位的底部位置 */
+  left: auto; /* 移除固定定位的左侧位置 */
+  transform: none; /* 移除 transform 属性 */
   background-color: #fff;
   padding: 10px 20px; /* 增加padding以拉长 */
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
@@ -264,6 +271,7 @@ export default {
   align-items: center;
   justify-content: center; /* 居中内容 */
   width: 80%; /* 设置宽度以拉长 */
+  margin-top: 20px; /* 添加顶部间距 */
 }
 
 .floating-bar span {
@@ -292,5 +300,10 @@ export default {
   max-width: 90%;
   max-height: 90%;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.5);
+}
+
+/deep/ .ql-editor a {
+  color: #1890ff;
+  text-decoration: underline;
 }
 </style>

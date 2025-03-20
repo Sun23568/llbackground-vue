@@ -38,7 +38,6 @@ export default {
         name: ''
       },
       dialogStatus: 'create',
-      dialogFormVisible: false,
       textMap: {
         update: '编辑',
         create: '创建文章'
@@ -78,26 +77,9 @@ export default {
         this.totalCount = data.totalCount;
       })
     },
-    handleSizeChange(val) {
-      //改变每页数量
-      this.listQuery.pageRow = val
-      this.handleFilter();
-    },
-    handleCurrentChange(val) {
-      //改变页码
-      this.listQuery.pageNum = val
-      this.getList();
-    },
-    handleFilter() {
-      //改变了查询条件,从第一页开始查询
-      this.listQuery.pageNum = 1
-      this.getList()
-    },
+
     showCreate() {
-      //显示新增对话框
-      this.tempArticle.content = "";
-      this.dialogStatus = "create"
-      this.dialogFormVisible = true
+      window.open(`/#/article/edit?mode=create`, '_blank');
     },
     openTab(articleId, mode) {
       //打开新的 Tab 页
@@ -109,6 +91,7 @@ export default {
           message: '文章保存成功',
           type: 'success'
         });
+        this.getList();
       }
     }
   }
