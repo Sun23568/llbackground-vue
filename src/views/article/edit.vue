@@ -1,3 +1,9 @@
+<head>
+<!-- 引入 highlight.js 库 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+<!-- 引入 highlight.js 样式 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+</head>
 <template>
   <div class="editor-container">
     <navbar></navbar>
@@ -14,9 +20,7 @@
         <div v-if="viewMode">
           <span class="title-display">{{ title }}</span>
           <hr class="separator"/>
-          <quill-content :content="content"></quill-content>
-
-<!--          <div class="ql-editor" v-html="content"></div>-->
+          <div class="ql-editor" v-html="highlightCode(content)"></div>
         </div>
       </el-form>
     </div> <!-- 新增容器结束 -->
@@ -29,12 +33,13 @@
 </template>
 
 <script>
-import 'quill/dist/quill.core.css'
-import 'quill/dist/quill.snow.css'
-import 'quill/dist/quill.bubble.css'
-
-import {quillEditor} from 'vue-quill-editor'
-import {Navbar} from '@/views/layout/components'
+import 'quill/dist/quill.core.css';
+import 'quill/dist/quill.snow.css';
+import 'quill/dist/quill.bubble.css';
+import { quillEditor } from 'vue-quill-editor';
+import { Navbar } from '@/views/layout/components';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/monokai-sublime.css'; // 引入语法高亮样式
 
 export default {
   components: {
@@ -43,9 +48,9 @@ export default {
   },
   data() {
     return {
-      title: '', // 添加标题数据属性
+      title: '',
       content: '',
-      wordCount: 0, // 新增字数统计
+      wordCount: 0,
       editorOption: {
         formats: {
           link: {
@@ -53,7 +58,6 @@ export default {
             underline: true
           }
         },
-        // 富文本编辑器配置
         modules: {
           toolbar: [
             ['bold', 'italic', 'underline', 'strike'],
@@ -69,10 +73,15 @@ export default {
             [{'font': []}],
             [{'align': []}],
             ['link', 'image', 'video']
-          ]
+          ],
+          syntax: {
+            highlight: text => {
+              return hljs.highlightAuto(text).value; // 这里就是代码高亮需要配置的地方
+            }
+          },
         },
         placeholder: '在这里编辑内容。。。',
-        theme: 'snow'  // or 'bubble'
+        theme: 'snow'
       },
       viewMode: true
     }
@@ -126,6 +135,22 @@ export default {
         // 发送消息到 article.vue
         window.opener.postMessage('articleSaved', '*');
       })
+    },
+    highlightCode(html) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      const codeBlocks = tempDiv.querySelectorAll('pre');
+      codeBlocks.forEach((block) => {
+        hljs.highlightElement(block);
+      });
+      const blockquotes = tempDiv.querySelectorAll('blockquote');
+      blockquotes.forEach((blockquote) => {
+        // 你可以在这里添加针对 blockquote 的样式处理
+        blockquote.style.borderLeft = '4px solid #ccc';
+        blockquote.style.paddingLeft = '15px';
+        blockquote.style.backgroundColor = '#f9f9f9';
+      });
+      return tempDiv.innerHTML;
     },
     addImageClickListeners() {
       const images = this.$el.querySelectorAll('.ql-editor img');
