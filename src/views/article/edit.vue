@@ -36,10 +36,12 @@
 import 'quill/dist/quill.core.css';
 import 'quill/dist/quill.snow.css';
 import 'quill/dist/quill.bubble.css';
-import { quillEditor } from 'vue-quill-editor';
 import { Navbar } from '@/views/layout/components';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/monokai-sublime.css'; // 引入语法高亮样式
+import {quillEditor, Quill} from 'vue-quill-editor'
+import {container, ImageExtend, QuillWatch} from 'quill-image-extend-module'
+Quill.register('modules/ImageExtend', ImageExtend)
 
 export default {
   components: {
@@ -59,26 +61,28 @@ export default {
           }
         },
         modules: {
-          toolbar: [
-            ['bold', 'italic', 'underline', 'strike'],
-            ['blockquote', 'code-block'],
-            [{'header': 1}, {'header': 2}],
-            [{'list': 'ordered'}, {'list': 'bullet'}],
-            [{'script': 'sub'}, {'script': 'super'}],
-            [{'indent': '-1'}, {'indent': '+1'}],
-            [{'direction': 'rtl'}],
-            [{'size': ['small', false, 'large', 'huge']}],
-            [{'header': [1, 2, 3, 4, 5, 6, false]}],
-            [{'color': []}, {'background': []}],
-            [{'font': []}],
-            [{'align': []}],
-            ['link', 'image', 'video']
-          ],
+          toolbar: {
+            container: container,  // container为工具栏，此次引入了全部工具栏，也可自行配置
+            handlers: {
+              'image': function () {  // 劫持原来的图片点击按钮事件
+                QuillWatch.emit(this.quill.id)
+              }
+            }
+          },
           syntax: {
             highlight: text => {
               return hljs.highlightAuto(text).value; // 这里就是代码高亮需要配置的地方
             }
           },
+          ImageExtend: {
+            loading: true,
+            name: 'file',
+            action: '/api/article/uploadFile',
+            response: (res) => {
+              console.log(res.info)
+              return res.info;
+            }
+          }
         },
         placeholder: '在这里编辑内容。。。',
         theme: 'snow'
@@ -109,6 +113,7 @@ export default {
   },
   methods: {
     onTextChange() { // 新增方法，统计字数
+      console.log(this.$refs.myQuillEditor.quill.root.innerHTML)
       this.wordCount = this.$refs.myQuillEditor.quill.getText().trim().length;
     },
     cancel() { // 新增方法，取消按钮功能
@@ -178,7 +183,6 @@ export default {
       containerInner.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
       containerInner.style.position = 'relative';
       container.appendChild(containerInner);
-
 
       const expandedImg = document.createElement('img');
       expandedImg.src = img.src;
