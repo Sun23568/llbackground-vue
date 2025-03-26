@@ -36,11 +36,12 @@
 import 'quill/dist/quill.core.css';
 import 'quill/dist/quill.snow.css';
 import 'quill/dist/quill.bubble.css';
-import { Navbar } from '@/views/layout/components';
+import {Navbar} from '@/views/layout/components';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/monokai-sublime.css'; // 引入语法高亮样式
 import {quillEditor, Quill} from 'vue-quill-editor'
 import {container, ImageExtend, QuillWatch} from 'quill-image-extend-module'
+
 Quill.register('modules/ImageExtend', ImageExtend)
 
 export default {
@@ -64,8 +65,43 @@ export default {
           toolbar: {
             container: container,  // container为工具栏，此次引入了全部工具栏，也可自行配置
             handlers: {
-              'image': function () {  // 劫持原来的图片点击按钮事件
-                QuillWatch.emit(this.quill.id)
+              'image': function () {
+                // 创建一个文件输入元素
+                const input = document.createElement('input');
+                input.type = 'file';
+                // 设置 accept 属性，只接受 PNG 格式文件
+                input.accept = 'image/png';
+                input.addEventListener('change', (event) => {
+                  const file = event.target.files[0];
+                  if (file) {
+                    const fileType = file.type;
+                    if (fileType === 'image/png') {
+                      const formData = new FormData();
+                      formData.append('file', file);
+
+                      // 假设这里使用 axios 进行文件上传，你可以根据实际情况修改
+                      import('axios').then((axios) => {
+                        axios.post('/api/article/uploadFile', formData, {
+                          headers: {
+                            'Content-Type': 'multipart/form-data'
+                          }
+                        }).then((response) => {
+                          console.log('图片上传成功:', response);
+                          const imageUrl = response.data.info; // 假设响应中的 info 字段是图片的 URL
+                          const range = this.quill.getSelection();
+                          console.log(range.index, imageUrl)
+                          this.quill.insertEmbed(range.index, 'image', imageUrl, 'user');
+                          this.quill.setSelection(range.index + 1);
+                        }).catch((error) => {
+                          console.error('图片上传失败:', error);
+                        });
+                      });
+                    } else {
+                      alert('仅支持上传 PNG 格式的图片！');
+                    }
+                  }
+                });
+                input.click();
               }
             }
           },
@@ -79,9 +115,9 @@ export default {
             name: 'file',
             action: '/api/article/uploadFile',
             response: (res) => {
-              console.log(res.info)
               return res.info;
-            }
+            },
+            accept: 'image/png' // 新增属性，限制只接受 PNG 格式文件
           }
         },
         placeholder: '在这里编辑内容。。。',
@@ -110,16 +146,19 @@ export default {
         });
       });
     }
-  },
+  }
+  ,
   methods: {
     onTextChange() { // 新增方法，统计字数
       console.log(this.$refs.myQuillEditor.quill.root.innerHTML)
       this.wordCount = this.$refs.myQuillEditor.quill.getText().trim().length;
-    },
+    }
+    ,
     cancel() { // 新增方法，取消按钮功能
       // 关闭当前tab页的逻辑，这里假设使用的是浏览器的关闭标签页功能
       window.close();
-    },
+    }
+    ,
     submit() {
       this.api({
         url: '/article/updateArticle',
@@ -140,7 +179,8 @@ export default {
         // 发送消息到 article.vue
         window.opener.postMessage('articleSaved', '*');
       })
-    },
+    }
+    ,
     highlightCode(html) {
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = html;
@@ -156,13 +196,15 @@ export default {
         blockquote.style.backgroundColor = '#f9f9f9';
       });
       return tempDiv.innerHTML;
-    },
+    }
+    ,
     addImageClickListeners() {
       const images = this.$el.querySelectorAll('.ql-editor img');
       images.forEach(img => {
         img.addEventListener('dblclick', this.toggleImageSize);
       });
-    },
+    }
+    ,
     toggleImageSize(event) {
       event.preventDefault(); // 阻止默认行为
       const img = event.target;
@@ -213,16 +255,13 @@ export default {
       expandedImg.addEventListener('wheel', handleWheel);
 
       containerInner.onmousedown = e => {
-        console.log('鼠标按下', e.offsetX, e.offsetY)
         const offsetX = e.offsetX;
         const offsetY = e.offsetY;
         containerInner.onmousemove = e => {
-          console.log('鼠标移动', e.clientX, e.clientY)
           expandedImg.style.left = `${e.clientX - offsetX + expandedImg.offsetWidth / 2}px`;
           expandedImg.style.top = `${e.clientY - offsetY + expandedImg.offsetHeight / 2}px`;
         };
         containerInner.onmouseup = () => {
-          console.log('鼠标抬起')
           containerInner.onmousemove = null;
           containerInner.onmouseup = null;
         };
