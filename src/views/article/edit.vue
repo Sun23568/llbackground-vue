@@ -70,35 +70,33 @@ export default {
                 const input = document.createElement('input');
                 input.type = 'file';
                 // 设置 accept 属性，只接受 PNG 格式文件
-                input.accept = 'image/png';
+                input.accept = 'image/*';
                 input.addEventListener('change', (event) => {
                   const file = event.target.files[0];
                   if (file) {
-                    const fileType = file.type;
-                    if (fileType === 'image/png') {
-                      const formData = new FormData();
-                      formData.append('file', file);
-
-                      // 假设这里使用 axios 进行文件上传，你可以根据实际情况修改
-                      import('axios').then((axios) => {
-                        axios.post('/api/article/uploadFile', formData, {
-                          headers: {
-                            'Content-Type': 'multipart/form-data'
-                          }
-                        }).then((response) => {
-                          console.log('图片上传成功:', response);
-                          const imageUrl = response.data.info; // 假设响应中的 info 字段是图片的 URL
-                          const range = this.quill.getSelection();
-                          console.log(range.index, imageUrl)
-                          this.quill.insertEmbed(range.index, 'image', imageUrl, 'user');
-                          this.quill.setSelection(range.index + 1);
-                        }).catch((error) => {
-                          console.error('图片上传失败:', error);
-                        });
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    const range = this.quill.getSelection();
+                    this.quill.insertEmbed(range.index, 'image', '/uploading-img.svg', 'user');
+                    this.quill.setSelection(range.index + 1);
+                    // 假设这里使用 axios 进行文件上传，你可以根据实际情况修改
+                    import('axios').then((axios) => {
+                      axios.post('/api/article/uploadFile', formData, {
+                        headers: {
+                          'Content-Type': 'multipart/form-data'
+                        }
+                      }).then((response) => {
+                        const imageUrl = response.data.info; // 假设响应中的 info 字段是图片的 URL
+                        const range = this.quill.getSelection();
+                        // 用实际图片替换默认图片
+                        const index = this.quill.getSelection().index - 1;
+                        this.quill.deleteText(index, 1);
+                        this.quill.insertEmbed(range.index, 'image', imageUrl, 'user');
+                        this.quill.setSelection(range.index + 1);
+                      }).catch((error) => {
+                        console.error('图片上传失败:', error);
                       });
-                    } else {
-                      alert('仅支持上传 PNG 格式的图片！');
-                    }
+                    });
                   }
                 });
                 input.click();
@@ -123,7 +121,9 @@ export default {
         placeholder: '在这里编辑内容。。。',
         theme: 'snow'
       },
-      viewMode: true
+      viewMode: true,
+      loadingImg: '/loading-img.svg',
+      loadingError: '/loading-error.svg'
     }
   },
   mounted() {
@@ -150,7 +150,6 @@ export default {
   ,
   methods: {
     onTextChange() { // 新增方法，统计字数
-      console.log(this.$refs.myQuillEditor.quill.root.innerHTML)
       this.wordCount = this.$refs.myQuillEditor.quill.getText().trim().length;
     }
     ,
@@ -202,6 +201,21 @@ export default {
       const images = this.$el.querySelectorAll('.ql-editor img');
       images.forEach(img => {
         img.addEventListener('dblclick', this.toggleImageSize);
+        const originalSrc = img.src;
+        img.src = this.loadingImg;
+        img.setAttribute('data-original-src', originalSrc);
+        const loadHandler = () => {
+          img.src = originalSrc;
+        };
+        img.addEventListener('load', loadHandler);
+
+        const errorHandler = () => {
+          // 处理图片加载失败的情况，这里可以显示默认的错误图片
+          img.src = this.loadingError;
+          // 移除 load 事件监听器，避免无限循环
+          img.removeEventListener('load', loadHandler);
+        };
+        img.addEventListener('error', errorHandler);
       });
     }
     ,
