@@ -128,7 +128,7 @@ export default {
 
       const body = {
         chatList: this.chatList,
-        modelName: 'luoli'
+        modelName: 'jiejie'
       };
 
       try {
@@ -151,6 +151,9 @@ export default {
         this.isResponseComplete = true; // 设置回答完成状态
         // 新增: 清空提问框内容
         this.question = '';
+      } finally {
+        this.isLoading = false;
+        this.isResponseComplete = true;
       }
     },
 

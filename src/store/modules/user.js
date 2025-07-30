@@ -32,7 +32,7 @@ const user = {
     Login({commit, state}, loginForm) {
       return new Promise((resolve, reject) => {
         api({
-          url: "login/auth",
+          url: "sa/login",
           method: "post",
           data: loginForm
         }).then(data => {
@@ -48,7 +48,7 @@ const user = {
     GetInfo({commit, state}) {
       return new Promise((resolve, reject) => {
         api({
-          url: '/login/getInfo',
+          url: '/sa/session',
           method: 'post'
         }).then(data => {
           //储存用户信息
