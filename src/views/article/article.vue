@@ -11,13 +11,16 @@
     <el-table :data="list" v-loading="listLoading" border fit
               highlight-current-row @row-dblclick="viewContent">
       <el-table-column align="left" prop="title" label="文章标题" style="width: 60px;"></el-table-column>
-      <el-table-column align="center" label="管理" width="200">
+      <el-table-column align="center" label="管理">
         <template slot-scope="scope">
           <el-button type="primary" icon="edit" @click="openTab(scope.row.id, 'edit')" v-permission="'article:update'">
             修改
           </el-button>
           <el-button type="primary" icon="edit" @click="openTab(scope.row.id, 'view')" v-permission="'article:update'">
             查看
+          </el-button>
+          <el-button type="primary" icon="edit" @click="removeArticle(scope.row.id)" v-permission="'article:update'">
+            删除
           </el-button>
         </template>
       </el-table-column>
@@ -38,7 +41,6 @@ export default {
         name: ''
       },
       dialogStatus: 'create',
-      dialogFormVisible: false,
       textMap: {
         update: '编辑',
         create: '创建文章'
@@ -78,30 +80,31 @@ export default {
         this.totalCount = data.totalCount;
       })
     },
-    handleSizeChange(val) {
-      //改变每页数量
-      this.listQuery.pageRow = val
-      this.handleFilter();
-    },
-    handleCurrentChange(val) {
-      //改变页码
-      this.listQuery.pageNum = val
-      this.getList();
-    },
-    handleFilter() {
-      //改变了查询条件,从第一页开始查询
-      this.listQuery.pageNum = 1
-      this.getList()
-    },
+
     showCreate() {
-      //显示新增对话框
-      this.tempArticle.content = "";
-      this.dialogStatus = "create"
-      this.dialogFormVisible = true
+      window.open(`/#/article/edit?mode=create`, '_blank');
     },
     openTab(articleId, mode) {
       //打开新的 Tab 页
       window.open(`/#/article/edit?id=${articleId}&mode=${mode}`, '_blank');
+    },
+    removeArticle(articleId) {
+      this.$confirm('此操作将永久删除该文章, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        this.api({
+          url: "/article/deleteArticle",
+          method: "post",
+          data: {
+            articleId: articleId
+          }
+        }).then(data => {
+          this.$message('文章删除成功');
+          this.getList();
+        })
+      })
     },
     handleMessage(event) {
       if (event.data === 'articleSaved') {
@@ -109,6 +112,7 @@ export default {
           message: '文章保存成功',
           type: 'success'
         });
+        this.getList();
       }
     }
   }

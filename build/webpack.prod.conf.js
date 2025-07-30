@@ -111,6 +111,13 @@ const webpackConfig = merge(baseWebpackConfig, {
       children: true,
       minChunks: 3
     }),
+    new CopyWebpackPlugin([
+      {
+        from: path.resolve(__dirname, '../public'),
+        to: config.build.assetsRoot,
+        ignore: ['.*']
+      }
+    ])
   ]
 })
 if (config.build.productionGzip) {
