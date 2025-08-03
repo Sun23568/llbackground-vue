@@ -4,18 +4,18 @@
              label-width="0px"
              class="card-box login-form">
       <h3 class="title">孙老六的后花园</h3>
-      <el-form-item prop="username">
+      <el-form-item prop="userId">
         <span class="svg-container svg-container_login">
           <svg-icon icon-class="user"/>
         </span>
-        <el-input v-model="loginForm.username" autoComplete="on"/>
+        <el-input v-model="loginForm.userId" autoComplete="on" placeholder="请输入账号"/>
       </el-form-item>
       <el-form-item prop="password">
         <span class="svg-container">
           <svg-icon icon-class="password"></svg-icon>
         </span>
         <el-input type="password" @keyup.enter.native="handleLogin" v-model="loginForm.password"
-                  autoComplete="on"></el-input>
+                  autoComplete="on" placeholder="请输入密码"></el-input>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" style="width:100%;" :loading="loading" @click.native.prevent="handleLogin">
@@ -31,11 +31,11 @@ export default {
   data() {
     return {
       loginForm: {
-        username: 'admin',
-        password: '123456'
+        userId: '',
+        password: ''
       },
       loginRules: {
-        username: [{required: true, trigger: 'blur', message: "请输入用户名"}],
+        userId: [{required: true, trigger: 'blur', message: "请输入账号"}],
         password: [{required: true, trigger: 'blur', message: "请输入密码"}]
       },
       loading: false
@@ -46,11 +46,17 @@ export default {
       this.$refs.loginForm.validate(valid => {
         if (valid) {
           this.loading = true
-          this.$store.dispatch('Login', this.loginForm).then(data => {
-            this.loading = false
-            this.$router.push({path: '/'})
+          // 登录前确保已获取服务器公钥
+          this.$store.dispatch('GetServerPublicKey').then(() => {
+            this.$store.dispatch('Login', this.loginForm).then(data => {
+              this.loading = false
+              this.$router.push({path: '/'})
+            }).catch(() => {
+              this.loading = false
+            })
           }).catch(() => {
             this.loading = false
+            this.$message.error('登陆异常')
           })
         } else {
           return false

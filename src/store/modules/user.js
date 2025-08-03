@@ -2,6 +2,7 @@ import {removeToken, setToken} from '@/utils/auth'
 import {default as api} from '../../utils/api'
 import store from '../../store'
 import router from '../../router'
+import {sm2} from 'sm-crypto'
 
 const user = {
   state: {
@@ -10,6 +11,7 @@ const user = {
     roleIds: [],
     menus: [],
     permissions: [],
+    serverPublicKey: "",
   },
   mutations: {
     SET_USER: (state, userInfo) => {
@@ -25,16 +27,35 @@ const user = {
       state.roleIds = [];
       state.menus = [];
       state.permissions = [];
+      state.serverPublicKey = ""; // 重置时也清空公钥
+    },
+    SET_PUBLIC_KEY: (state, publicKey) => {
+      state.serverPublicKey = publicKey;
     }
   },
-  actions: {
-    // 登录
-    Login({commit, state}, loginForm) {
+  actions: {// 获取服务器公钥
+    GetServerPublicKey({commit}) {
       return new Promise((resolve, reject) => {
         api({
-          url: "sa/login",
-          method: "post",
-          data: loginForm
+          url: "/sa/publicKey",
+          method: "get"
+        }).then(data => {
+          commit('SET_PUBLIC_KEY', data.publicKey);
+          resolve(data.publicKey);
+        }).catch(err => {
+          reject(err);
+        });
+      });
+    },
+    // 登录
+    Login({commit, state}, loginForm) {
+      // 密码加密
+      console.log(state.serverPublicKey);
+      loginForm.password = sm2.doEncrypt(loginForm.password, state.serverPublicKey);
+      console.log(loginForm);
+      return new Promise((resolve, reject) => {
+        api({
+          url: "sa/login", method: "post", data: loginForm
         }).then(data => {
           //localstorage中保存token
           setToken(data.token);
@@ -46,10 +67,11 @@ const user = {
     },
     // 获取用户信息
     GetInfo({commit, state}) {
+      // 前端使用SM2加密密码
+      const encryptedPassword = sm2.doEncrypt(password, serverPublicKey);
       return new Promise((resolve, reject) => {
         api({
-          url: '/sa/session',
-          method: 'post'
+          url: '/sa/session', method: 'post'
         }).then(data => {
           //储存用户信息
           commit('SET_USER', data);
@@ -68,8 +90,7 @@ const user = {
     LogOut({commit}) {
       return new Promise((resolve) => {
         api({
-          url: "login/logout",
-          method: "post"
+          url: "login/logout", method: "post"
         }).then(data => {
           commit('RESET_USER')
           removeToken()
