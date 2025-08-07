@@ -16,13 +16,6 @@
         </template>
       </el-table-column>
       <el-table-column align="center" label="角色" prop="roleName" width="150"></el-table-column>
-      <el-table-column align="center" label="用户">
-        <template slot-scope="scope">
-          <div v-for="user in scope.row.users">
-            <div v-text="user.nickname" style="display: inline-block;vertical-align: middle;"></div>
-          </div>
-        </template>
-      </el-table-column>
       <el-table-column align="center" label="菜单&权限" width="420">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.roleName===adminName" type="success">全部</el-tag>

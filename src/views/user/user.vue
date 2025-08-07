@@ -15,7 +15,6 @@
           <span v-text="getIndex(scope.$index)"> </span>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="昵称" prop="nickname" style="width: 60px;"></el-table-column>
       <el-table-column align="center" label="用户名" prop="username" style="width: 60px;"></el-table-column>
       <el-table-column align="center" label="角色" width="200">
         <template slot-scope="scope">
@@ -70,10 +69,6 @@
             </el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="昵称" required>
-          <el-input type="text" v-model="tempUser.nickname">
-          </el-input>
-        </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="dialogFormVisible = false">取 消</el-button>
@@ -106,7 +101,6 @@ export default {
       tempUser: {
         username: '',
         password: '',
-        nickname: '',
         roleIds: [],
         userId: ''
       }
@@ -168,7 +162,6 @@ export default {
       //显示新增对话框
       this.tempUser.username = "";
       this.tempUser.password = "";
-      this.tempUser.nickname = "";
       this.tempUser.roleIds = [];
       this.tempUser.userId = "";
       this.dialogStatus = "create"
@@ -177,7 +170,6 @@ export default {
     showUpdate($index) {
       let user = this.list[$index];
       this.tempUser.username = user.username;
-      this.tempUser.nickname = user.nickname;
       this.tempUser.roleIds = user.roles.map(x => x.roleId);
       this.tempUser.userId = user.userId;
       this.tempUser.deleteStatus = '1';
@@ -193,10 +185,6 @@ export default {
       }
       if (isCreate && u.password.length === 0) {
         this.$message.warning('请填写密码')
-        return false
-      }
-      if (u.nickname.trim().length === 0) {
-        this.$message.warning('请填写昵称')
         return false
       }
       if (u.roleIds.length === 0) {

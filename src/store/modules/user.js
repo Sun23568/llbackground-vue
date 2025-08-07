@@ -2,11 +2,10 @@ import {removeToken, setToken} from '@/utils/auth'
 import {default as api} from '../../utils/api'
 import store from '../../store'
 import router from '../../router'
-import {sm2} from 'sm-crypto'
+import {sm3} from 'sm-crypto'
 
 const user = {
   state: {
-    nickname: "",
     userId: "",
     roleIds: [],
     menus: [],
@@ -15,14 +14,12 @@ const user = {
   },
   mutations: {
     SET_USER: (state, userInfo) => {
-      state.nickname = userInfo.nickname;
       state.userId = userInfo.userId;
       state.roleIds = userInfo.roleIds;
       state.menus = userInfo.menuList;
       state.permissions = userInfo.permissionList;
     },
     RESET_USER: (state) => {
-      state.nickname = "";
       state.userId = "";
       state.roleIds = [];
       state.menus = [];
@@ -50,15 +47,14 @@ const user = {
     // 登录
     Login({commit, state}, loginForm) {
       // 密码加密
-      console.log(state.serverPublicKey);
-      loginForm.password = sm2.doEncrypt(loginForm.password, state.serverPublicKey);
-      console.log(loginForm);
+      loginForm.password = sm3(loginForm.password);
       return new Promise((resolve, reject) => {
         api({
-          url: "sa/login", method: "post", data: loginForm
+          url: "/sa/login", method: "post", data: loginForm
         }).then(data => {
+          debugger;
           //localstorage中保存token
-          setToken(data.token);
+          setToken(data.userSession.sessionMap.token);
           resolve(data);
         }).catch(err => {
           reject(err)
@@ -68,11 +64,11 @@ const user = {
     // 获取用户信息
     GetInfo({commit, state}) {
       // 前端使用SM2加密密码
-      const encryptedPassword = sm2.doEncrypt(password, serverPublicKey);
       return new Promise((resolve, reject) => {
         api({
           url: '/sa/session', method: 'post'
         }).then(data => {
+          debugger;
           //储存用户信息
           commit('SET_USER', data);
           //生成路由
