@@ -27,7 +27,7 @@ export default {
 </script>
 
 <style rel="stylesheet/scss" lang="scss" scoped>
-@import "src/styles/mixin.scss";
+@use "@/styles/mixin.scss" as *;
 .app-wrapper {
   @include clearfix;
   position: relative;

@@ -1,9 +1,3 @@
-<head>
-<!-- 引入 highlight.js 库 -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
-<!-- 引入 highlight.js 样式 -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
-</head>
 <template>
   <div class="editor-container">
     <navbar></navbar>
@@ -15,7 +9,8 @@
             <el-input type="text" id="title" v-model="title" placeholder="请输入文章标题" class="full-width-input"/>
           </el-form-item>
           <hr class="separator"/>
-          <quill-editor ref="myQuillEditor" v-model="content" :options="editorOption" @change="onTextChange"/>
+          <span class="hljs-variable">123123123</span>
+          <quill-editor v-model="content" :options="editOption" @ready="onEditorReady"/>
         </div>
         <div v-if="viewMode">
           <span class="title-display">{{ title }}</span>
@@ -31,104 +26,83 @@
     </div>
   </div>
 </template>
-
 <script>
-import 'quill/dist/quill.core.css';
+import Quill from 'quill'
+import {quillEditor} from 'vue-quill-editor'
 import 'quill/dist/quill.snow.css';
-import 'quill/dist/quill.bubble.css';
-import {Navbar} from '@/views/layout/components';
+import 'quill/dist/quill.core.css'
+import 'quill/dist/quill.bubble.css'
+import Navbar from '@/views/layout/components/Navbar';
 import hljs from 'highlight.js';
-import 'highlight.js/styles/monokai-sublime.css'; // 引入语法高亮样式
-import {quillEditor, Quill} from 'vue-quill-editor'
-import {container, ImageExtend, QuillWatch} from 'quill-image-extend-module'
+import 'highlight.js/styles/github.css';
+import ImageUploader from 'quill-image-uploader'
 
-Quill.register('modules/ImageExtend', ImageExtend)
+Quill.register('modules/imageUploader', ImageUploader);
 
 export default {
   components: {
-    quillEditor,
-    Navbar
+    Navbar,
+    quillEditor
   },
   data() {
     return {
       title: '',
       content: '',
       wordCount: 0,
-      editorOption: {
-        formats: {
-          link: {
-            color: '#1890ff',
-            underline: true
-          }
-        },
+      viewMode: false,
+      quillInstance: null,
+      loadingImg: '/loading-img.svg',
+      loadingError: '/loading-error.svg',
+      editOption: {
         modules: {
+          keyboard: {
+            bindings: {
+              tab: {
+                key: 'Tab',
+                handle: function () {
+                  console.log('Tab key pressed2')
+                }
+              },
+            },
+          },
           toolbar: {
-            container: container,  // container为工具栏，此次引入了全部工具栏，也可自行配置
+            container: [
+              ['bold', 'italic', 'underline'],
+              ['code-block', 'blockquote'],
+              [{'list': 'ordered'}, {'list': 'bullet'}],
+              ['link', 'image']
+            ],
             handlers: {
-              'image': function () {
+              image: function () {
                 // 创建一个文件输入元素
                 const input = document.createElement('input');
                 input.type = 'file';
                 // 设置 accept 属性，只接受 PNG 格式文件
-                input.accept = 'image/*';
-                input.addEventListener('change', (event) => {
-                  const file = event.target.files[0];
-                  if (file) {
-                    const formData = new FormData();
-                    formData.append('file', file);
-                    const range = this.quill.getSelection();
-                    this.quill.insertEmbed(range.index, 'image', '/uploading-img.svg', 'user');
-                    this.quill.setSelection(range.index + 1);
-                    // 假设这里使用 axios 进行文件上传，你可以根据实际情况修改
-                    import('axios').then((axios) => {
-                      axios.post('/api/article/uploadFile', formData, {
-                        headers: {
-                          'Content-Type': 'multipart/form-data'
-                        }
-                      }).then((response) => {
-                        const imageUrl = response.data.info; // 假设响应中的 info 字段是图片的 URL
-                        const range = this.quill.getSelection();
-                        // 用实际图片替换默认图片
-                        const index = this.quill.getSelection().index - 1;
-                        this.quill.deleteText(index, 1);
-                        this.quill.insertEmbed(range.index, 'image', imageUrl, 'user');
-                        this.quill.setSelection(range.index + 1);
-                      }).catch((error) => {
-                        console.error('图片上传失败:', error);
-                      });
-                    });
-                  }
-                });
-                input.click();
+                input.accept = 'image/png, image/jpeg';
               }
             }
           },
           syntax: {
-            highlight: text => {
-              return hljs.highlightAuto(text).value; // 这里就是代码高亮需要配置的地方
+            highlight: text =>  {
+              console.log('high before', text)
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = text;
+              hljs.highlightElement(tempDiv);
+              console.log('high after', tempDiv.innerHTML)
+              return tempDiv.innerHTML;
             }
-          },
-          ImageExtend: {
-            loading: true,
-            name: 'file',
-            action: '/api/article/uploadFile',
-            response: (res) => {
-              return res.info;
-            },
-            accept: 'image/png' // 新增属性，限制只接受 PNG 格式文件
           }
         },
         placeholder: '在这里编辑内容。。。',
         theme: 'snow'
-      },
-      viewMode: true,
-      loadingImg: '/loading-img.svg',
-      loadingError: '/loading-error.svg'
+
+      }
     }
   },
   mounted() {
-    const articleId = this.$route.query.id;
-    this.viewMode = this.$route.query.mode !== 'edit' && articleId;
+    this.keywordHandler();
+    const articleId = this.$route.query.id ?? '';
+    this.viewMode = this.$route.query.mode !== 'edit' && articleId !== '';
     // 获取文章信息
     if (articleId) {
       this.api({
@@ -146,18 +120,76 @@ export default {
         });
       });
     }
-  }
-  ,
+  },
   methods: {
-    onTextChange() { // 新增方法，统计字数
+    // 在编辑器准备好后，获取 Quill 实例
+    onEditorReady(quill) {
+      this.quillInstance = quill; // 保存 quill 实例
+      const toolbar = quill.getModule('toolbar');
+      toolbar.addHandler('image', this.handleImageUpload); // 替换默认的图片上传行为
+    },
+    // 图片上传处理函数
+    handleImageUpload() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/png, image/webp';
+      input.click();
+
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          try {
+            // 上传图片axios
+            const response = await this.uploadImg(file);
+            this.insertImageToEditor(response);
+          } catch (error) {
+            console.error('图片上传失败', error);
+          }
+        }
+      };
+    },
+    async uploadImg(img) {
+      const formData = new FormData();
+      formData.append('file', img);
+      try {
+        const res = await this.api({
+          url: '/article/uploadFile',
+          method: 'post',
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          },
+          data: formData
+        });
+        return res;
+      } catch (err) {
+        console.error('Upload error:', err);
+        throw err; // 抛出错误，以便调用者可以处理
+      }
+    },
+    // 将上传的图片插入编辑器
+    insertImageToEditor(imageUrl) {
+      if (this.quillInstance) {
+        const range = this.quillInstance.getSelection();
+        this.quillInstance.insertEmbed(range.index, 'image', imageUrl, 'user');
+        // 获取当前富文本内容
+        const content = this.quillInstance.getText();
+      }
+    },
+    keywordHandler() {
+      // 阻止默认tab热键
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Tab') {
+          event.preventDefault();
+        }
+      });
+    },
+    onTextChange() {
+      // 统计字数
       this.wordCount = this.$refs.myQuillEditor.quill.getText().trim().length;
-    }
-    ,
-    cancel() { // 新增方法，取消按钮功能
-      // 关闭当前tab页的逻辑，这里假设使用的是浏览器的关闭标签页功能
+    },
+    cancel() {
       window.close();
-    }
-    ,
+    },
     submit() {
       this.api({
         url: '/article/updateArticle',
@@ -178,8 +210,7 @@ export default {
         // 发送消息到 article.vue
         window.opener.postMessage('articleSaved', '*');
       })
-    }
-    ,
+    },
     highlightCode(html) {
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = html;
@@ -206,6 +237,7 @@ export default {
         img.setAttribute('data-original-src', originalSrc);
         const loadHandler = () => {
           img.src = originalSrc;
+          img.removeEventListener('load', loadHandler);
         };
         img.addEventListener('load', loadHandler);
 
@@ -217,8 +249,7 @@ export default {
         };
         img.addEventListener('error', errorHandler);
       });
-    }
-    ,
+    },
     toggleImageSize(event) {
       event.preventDefault(); // 阻止默认行为
       const img = event.target;
@@ -387,5 +418,61 @@ export default {
 /deep/ .ql-editor a {
   color: #1890ff;
   text-decoration: underline;
+}
+
+/deep/ blockquote {
+  margin: 0;
+  padding: 0;
+  display: block;
+  white-space: break-spaces;
+}
+
+/deep/ ol {
+  margin: 0;
+  padding: 0;
+  display: block;
+  white-space: break-spaces;
+}
+
+/deep/ ul {
+  margin: 0;
+  padding: 0;
+  display: block;
+  white-space: break-spaces;
+}
+
+/deep/ .ql-editor p {
+  margin: 0;
+  padding: 0;
+  display: block;
+  white-space: break-spaces;
+}
+
+/deep/ .ql-editor {
+  white-space: normal;
+}
+
+.ql-image-loading {
+  position: relative;
+  background: url('/loading-img.svg') center no-repeat;
+}
+
+.ql-image-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ccc;
+  border-top-color: #409EFF;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
 }
 </style>

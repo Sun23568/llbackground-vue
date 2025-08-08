@@ -49,6 +49,7 @@ export default {
           // 登录前确保已获取服务器公钥
           this.$store.dispatch('GetServerPublicKey').then(() => {
             this.$store.dispatch('Login', this.loginForm).then(data => {
+              console.log(data);
               this.loading = false
               this.$router.push({path: '/'})
             }).catch(() => {
@@ -67,7 +68,7 @@ export default {
 }
 </script>
 <style rel="stylesheet/scss" lang="scss">
-@import "../../styles/mixin.scss";
+@use "@/styles/mixin.scss" as *;
 
 $bg: #2d3a4b;
 $dark_gray: #889aa4;

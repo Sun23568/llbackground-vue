@@ -1,5 +1,4 @@
-const TokenKey = 'token'
-
+const TokenKey = 'llback-token'
 
 /**
  * 获取缓存数据

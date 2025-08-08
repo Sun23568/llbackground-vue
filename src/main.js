@@ -1,4 +1,7 @@
 import Vue from 'vue'
+if (window.MutationEvent) {
+  window.MutationEvent = null // 禁用旧式 Mutation 事件
+}
 import 'normalize.css/normalize.css'// A modern alternative to CSS resets
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
@@ -10,6 +13,7 @@ import '@/icons' // icon
 import '@/permission' // 权限
 import {default as api} from './utils/api'
 import directives from "@/directives";
+import '@/styles/highlight.scss'
 
 import {hasPermission} from "./utils/hasPermission";
 Vue.use(ElementUI, {locale})
@@ -17,7 +21,6 @@ Vue.prototype.api = api
 //全局的常量
 Vue.prototype.hasPerm = hasPermission
 Vue.use(directives);
-
 //生产环境时自动设置为 false 以阻止 vue 在启动时生成生产提示。
 Vue.config.productionTip = (process.env.NODE_ENV != 'production')
 new Vue({

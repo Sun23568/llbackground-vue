@@ -2,7 +2,7 @@
   <div class="page-container">
     <div class="chat-container">
       <div class="chat-body">
-        <simplebar style="height: 100%;">
+        <SimpleBar style="height: 100%;">
           <div class="response-area" id="response" style="white-space: pre-line;" @mouseenter="showCopyButton = true"
                @mouseleave="showCopyButton = false">
             {{ response }}
@@ -18,7 +18,7 @@
               </el-button-group>
             </div>
           </div>
-        </simplebar>
+        </SimpleBar>
       </div>
       <!-- 新增: 图片展示区域 -->
       <div class="image-area">
@@ -247,7 +247,7 @@ body, html {
 }
 
 .page-container {
-  background-image: url('../../assets/banner-background.jpg'); /* 确保路径正确 */
+  background-image: url('/banner-background.jpg'); /* 确保路径正确 */
   background-size: cover; /* 背景图片覆盖整个屏幕 */
   background-position: center; /* 背景图片居中 */
   background-repeat: no-repeat; /* 防止背景图片重复 */
