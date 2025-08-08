@@ -2,13 +2,11 @@ import {removeToken, setToken} from '@/utils/auth'
 import {default as api} from '../../utils/api'
 import store from '../../store'
 import router from '../../router'
-import {sm2} from 'sm-crypto'
-import {Message} from "element-ui";
-import 'element-ui/lib/theme-chalk/index.css'
-
+import {sm3} from 'sm-crypto'
 
 const user = {
   state: {
+    nickname: "",
     userId: "",
     roleIds: [],
     menus: [],
@@ -17,12 +15,14 @@ const user = {
   },
   mutations: {
     SET_USER: (state, userInfo) => {
+      state.nickname = userInfo.nickname;
       state.userId = userInfo.userId;
       state.roleIds = userInfo.roleIds;
       state.menus = userInfo.menuList;
       state.permissions = userInfo.permissionList;
     },
     RESET_USER: (state) => {
+      state.nickname = "";
       state.userId = "";
       state.roleIds = [];
       state.menus = [];
@@ -49,23 +49,18 @@ const user = {
     },
     // 登录
     Login({commit, state}, loginForm) {
-      Message({
-        showClose: true,
-        message: "测试测试...",
-        type: 'error',
-        duration: 300000
-      });
       // 密码加密
+      loginForm.password = sm3(loginForm.password);
       const form = {
         userId: loginForm.userId,
         password: sm2.doEncrypt(loginForm.password, state.serverPublicKey)
       }
       return new Promise((resolve, reject) => {
         api({
-          url: "sa/login", method: "post", data: form
+          url: "/sa/login", method: "post", data: loginForm
         }).then(data => {
           //localstorage中保存token
-          setToken(data.token);
+          setToken(data.userSession.sessionMap.token);
           resolve(data);
         }).catch(err => {
           reject(err)
@@ -75,6 +70,7 @@ const user = {
     // 获取用户信息
     GetInfo({commit, state}) {
       // 前端使用SM2加密密码
+      const encryptedPassword = sm2.doEncrypt(password, serverPublicKey);
       return new Promise((resolve, reject) => {
         api({
           url: '/sa/session', method: 'post'
