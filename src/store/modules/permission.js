@@ -53,7 +53,7 @@ const permission = {
     GenerateRoutes({commit}, userPermission) {
       //生成路由
       return new Promise(resolve => {
-        const menus = userPermission.menuList;
+        const menus = userPermission.userCacheItemVo.menus;
         //声明 该角色可用的路由
         let accessedRouters
         //筛选出本角色可用的路由

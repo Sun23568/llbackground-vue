@@ -25,19 +25,6 @@ service.interceptors.response.use(
     const res = response.data;
     if (res.code === '200') {
       return res.data;
-    } else if (res.code === "102401") {
-      Message({
-        showClose: true,
-        message: res.msg,
-        type: 'error',
-        duration: 500,
-        onClose: () => {
-          store.dispatch('FedLogOut').then(() => {
-            location.reload()// 为了重新实例化vue-router对象 避免bug
-          })
-        }
-      });
-      return Promise.reject("未登录")
     } else {
       Message({
         message: res.msg,
@@ -49,11 +36,25 @@ service.interceptors.response.use(
   },
   error => {
     console.error('err' + error)// for debug
-    Message({
-      message: error.message,
-      type: 'error',
-      duration: 3 * 1000
-    })
+    if (error.response && error.response.status === 401) {
+      Message({
+        showClose: true,
+        message: error.response.message,
+        type: 'error',
+        duration: 500,
+        onClose: () => {
+          store.dispatch('FedLogOut').then(() => {
+            location.reload()// 为了重新实例化vue-router对象 避免bug
+          })
+        }
+      });
+    } else {
+      Message({
+        message: error.message,
+        type: 'error',
+        duration: 3 * 1000
+      })
+    }
     return Promise.reject(error)
   }
 )

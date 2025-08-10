@@ -6,8 +6,8 @@ import {sm3} from 'sm-crypto'
 
 const user = {
   state: {
-    nickname: "",
     userId: "",
+    userName: "",
     roleIds: [],
     menus: [],
     permissions: [],
@@ -15,14 +15,14 @@ const user = {
   },
   mutations: {
     SET_USER: (state, userInfo) => {
-      state.nickname = userInfo.nickname;
-      state.userId = userInfo.userId;
-      state.roleIds = userInfo.roleIds;
-      state.menus = userInfo.menuList;
-      state.permissions = userInfo.permissionList;
+      const info = userInfo.userSession;
+      state.userId = info.userId;
+      state.userName = info.userName;
+      // state.roleIds = userInfo.roleIds;
+      state.menus = info.userCacheItemVo.menus;
+      state.permissions = info.userCacheItemVo.perms;
     },
     RESET_USER: (state) => {
-      state.nickname = "";
       state.userId = "";
       state.roleIds = [];
       state.menus = [];
@@ -49,15 +49,13 @@ const user = {
     },
     // 登录
     Login({commit, state}, loginForm) {
-      // 密码加密
-      loginForm.password = sm3(loginForm.password);
-      const form = {
+      const param = {
         userId: loginForm.userId,
-        password: sm2.doEncrypt(loginForm.password, state.serverPublicKey)
+        password: sm3(loginForm.password)
       }
       return new Promise((resolve, reject) => {
         api({
-          url: "/sa/login", method: "post", data: loginForm
+          url: "/sa/login", method: "post", data: param
         }).then(data => {
           //localstorage中保存token
           setToken(data.userSession.sessionMap.token);
@@ -69,8 +67,6 @@ const user = {
     },
     // 获取用户信息
     GetInfo({commit, state}) {
-      // 前端使用SM2加密密码
-      const encryptedPassword = sm2.doEncrypt(password, serverPublicKey);
       return new Promise((resolve, reject) => {
         api({
           url: '/sa/session', method: 'post'
@@ -78,7 +74,7 @@ const user = {
           //储存用户信息
           commit('SET_USER', data);
           //生成路由
-          store.dispatch('GenerateRoutes', data).then(() => {
+          store.dispatch('GenerateRoutes', data.userSession).then(() => {
             //生成该用户的新路由json操作完毕之后,调用vue-router的动态新增路由方法,将新路由添加
             router.addRoutes(store.getters.addRouters)
           })

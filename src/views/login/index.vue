@@ -47,17 +47,11 @@ export default {
         if (valid) {
           this.loading = true
           // 登录前确保已获取服务器公钥
-          this.$store.dispatch('GetServerPublicKey').then(() => {
-            this.$store.dispatch('Login', this.loginForm).then(data => {
-              console.log(data);
-              this.loading = false
-              this.$router.push({path: '/'})
-            }).catch(() => {
-              this.loading = false
-            })
+          this.$store.dispatch('Login', this.loginForm).then(data => {
+            this.loading = false
+            this.$router.push({path: '/'})
           }).catch(() => {
             this.loading = false
-            this.$message.error('登陆异常')
           })
         } else {
           return false
