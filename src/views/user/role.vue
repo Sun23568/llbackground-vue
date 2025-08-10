@@ -106,7 +106,7 @@
       getAllPermisson() {
         //查询所有权限
         this.api({
-          url: "/user/listAllPermission",
+          url: "/access/all",
           method: "get"
         }).then(data => {
           this.allPermission = data.list;
@@ -116,7 +116,7 @@
         //查询列表
         this.listLoading = true;
         this.api({
-          url: "/user/listRole",
+          url: "/access/list",
           method: "get"
         }).then(data => {
           this.listLoading = false;

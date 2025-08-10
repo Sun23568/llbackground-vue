@@ -63,10 +63,10 @@ export const asyncRouterMap = [
       },
       {
         path: 'role',
-        name: '角色配置',
+        name: '人员配置',
         component: _import('user/role'),
-        meta: {title: '角色配置', icon: 'password'},
-        menu: 'role'
+        meta: {title: '人员配置', icon: 'password'},
+        menu: 'access'
       },
       {
         path: 'deepseek',
