@@ -35,27 +35,57 @@ service.interceptors.response.use(
     }
   },
   error => {
-    console.error('err' + error)// for debug
-    if (error.response && error.response.status === 401) {
-      Message({
-        showClose: true,
-        message: error.response.message,
-        type: 'error',
-        duration: 500,
-        onClose: () => {
-          store.dispatch('FedLogOut').then(() => {
-            location.reload()// 为了重新实例化vue-router对象 避免bug
-          })
-        }
-      });
+    if (error.response) {
+      const {status, message} = error.response;
+      switch (status) {
+        case 401:
+          Message({
+            showClose: true,
+            message: error.response.data?.message || message,
+            type: 'error',
+            duration: 500,
+            onClose: () => {
+              store.dispatch('FedLogOut').then(() => {
+                location.reload()// 为了重新实例化vue-router对象 避免bug
+              })
+            }
+          });
+          break;
+        case 403:
+          Message({
+            showClose: true,
+            message: '您没有权限访问此资源',
+            type: 'error',
+            duration: 3 * 1000
+          });
+          break;
+        case 404:
+          Message({
+            showClose: true,
+            message: '请求的资源不存在',
+            type: 'error',
+            duration: 3 * 1000
+          });
+          break;
+        default:
+          Message({
+            message: error.response.data?.message || message || '请求失败',
+            type: 'error',
+            duration: 3 * 1000
+          });
+      }
     } else {
       Message({
-        message: error.message,
+        message: error.message || '网络错误',
         type: 'error',
         duration: 3 * 1000
       })
     }
-    return Promise.reject(error)
+    return Promise.resolve({
+      code: error.response?.status || 'error',
+      msg: error.message,
+      data: null
+    });
   }
 )
 export default service
