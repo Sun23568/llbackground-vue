@@ -20,11 +20,7 @@
 // 修复element-ui图标不显示问题
 @font-face {
   font-family: 'element-icons';
-  src: url('~element-ui/lib/theme-chalk/fonts/element-icons.woff') format('woff'),
-  url('~element-ui/lib/theme-chalk/fonts/element-icons.ttf') format('truetype');
-  font-weight: normal;
-  font-display: auto;
-  font-style: normal;
+  src: url("~element-ui/lib/theme-chalk/fonts/element-icons.woff") format('woff');
 }
 
 [class^="el-icon-"], [class*=" el-icon-"] {
@@ -90,16 +86,6 @@
   left: 0;
   position: relative;
   margin: 0 auto;
-}
-
-// 修复element-ui图标不显示问题
-@font-face {
-  font-family: 'element-icons';
-  src: url('~element-ui/lib/theme-chalk/fonts/element-icons.woff') format('woff'),
-  url('~element-ui/lib/theme-chalk/fonts/element-icons.ttf') format('truetype');
-  font-weight: normal;
-  font-display: auto;
-  font-style: normal;
 }
 
 [class^="el-icon-"], [class*=" el-icon-"] {

@@ -41,7 +41,7 @@ Vue.use(Checkbox)
 Vue.use(CheckboxGroup)
 Vue.use(Icon)
 
-Vue.use(ElementUI, {locale})
+Vue.use(ElementUI)
 Vue.prototype.api = api
 //全局的常量
 Vue.prototype.hasPerm = hasPermission

@@ -11,6 +11,6 @@ export default {
 </script>
 
 <style lang="scss">
-  @use 'normalize.css/normalize.css';// normalize.css 样式格式化
-  @use './styles/index.scss'; // 全局自定义的css样式
+@import '~normalize.css/normalize.css'; // 改为 @import
+@import './styles/index.scss'; // 全局自定义的css样式
 </style>

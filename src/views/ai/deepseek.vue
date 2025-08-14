@@ -247,7 +247,7 @@ body, html {
 }
 
 .page-container {
-  background-image: url('/banner-background.jpg'); /* 确保路径正确 */
+  /* background-image: url('/banner-background.jpg');  确保路径正确 */
   background-size: cover; /* 背景图片覆盖整个屏幕 */
   background-position: center; /* 背景图片居中 */
   background-repeat: no-repeat; /* 防止背景图片重复 */

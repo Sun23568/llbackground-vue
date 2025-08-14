@@ -454,7 +454,7 @@ export default {
 
 .ql-image-loading {
   position: relative;
-  background: url('/loading-img.svg') center no-repeat;
+  /* background: url('/loading-img.svg') center no-repeat; */
 }
 
 .ql-image-loading::after {
