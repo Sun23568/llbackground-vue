@@ -3,6 +3,7 @@
 @use './transition.scss';
 @use './element-ui.scss';
 @use './sidebar.scss';
+@import '~element-ui/lib/theme-chalk/icon.css';
 
 body {
   -moz-osx-font-smoothing: grayscale;

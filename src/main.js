@@ -14,8 +14,33 @@ import '@/permission' // 权限
 import {default as api} from './utils/api'
 import directives from "@/directives";
 import '@/styles/highlight.scss'
-
 import {hasPermission} from "./utils/hasPermission";
+
+// 显式引入图标组件
+import {
+  Dialog,
+  Button,
+  Form,
+  FormItem,
+  Table,
+  TableColumn,
+  Tag,
+  Checkbox,
+  CheckboxGroup,
+  Icon
+} from 'element-ui';
+
+Vue.use(Dialog)
+Vue.use(Button)
+Vue.use(Form)
+Vue.use(FormItem)
+Vue.use(Table)
+Vue.use(TableColumn)
+Vue.use(Tag)
+Vue.use(Checkbox)
+Vue.use(CheckboxGroup)
+Vue.use(Icon)
+
 Vue.use(ElementUI, {locale})
 Vue.prototype.api = api
 //全局的常量

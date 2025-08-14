@@ -37,7 +37,8 @@ module.exports = {
     alias: {
       'vue$': 'vue/dist/vue.esm.js',
       '@': resolve('src'),
-    }
+    },
+    modules: [resolve('node_modules'), resolve('node_modules/.pnpm'), 'node_modules']
   },
   module: {
     rules: [
@@ -81,7 +82,7 @@ module.exports = {
         test: /\.(woff2?|eot|ttf|otf)(\?.*)?$/,
         loader: 'url-loader',
         options: {
-          limit: 100000,
+          limit: 10000,
           name: utils.assetsPath('fonts/[name].[hash:7].[ext]')
         }
       },
