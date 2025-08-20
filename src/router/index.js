@@ -63,9 +63,9 @@ export const asyncRouterMap = [
       },
       {
         path: 'access',
-        name: '人员配置',
+        name: '授权管理',
         component: _import('user/access'),
-        meta: {title: '人员配置', icon: 'password'},
+        meta: {title: '授权管理', icon: 'password'},
         menu: 'access'
       },
       {

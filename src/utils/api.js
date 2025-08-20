@@ -67,6 +67,14 @@ service.interceptors.response.use(
             duration: 3 * 1000
           });
           break;
+        case 102000:
+          Message({
+            showClose: true,
+            message: message,
+            type: 'error',
+            duration: 3 * 1000
+          });
+          break;
         default:
           Message({
             message: error.response.data?.message || message || '请求失败',
@@ -81,7 +89,7 @@ service.interceptors.response.use(
         duration: 3 * 1000
       })
     }
-    return Promise.resolve({
+    return Promise.reject({
       code: error.response?.status || 'error',
       msg: error.message,
       data: null

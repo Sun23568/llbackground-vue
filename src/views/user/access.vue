@@ -1,5 +1,8 @@
 <template>
   <div class="app-container">
+    <el-button type="primary" @click="addPermVisible = true" v-permission="'access:addPerm'">新增权限</el-button>
+    <el-button type="primary" @click="addMenuVisible = true" v-permission="'access:addMenu'">新增菜单</el-button>
+
     <el-table
       :data="list"
       v-loading="listLoading"
@@ -64,22 +67,23 @@
       </el-table-column>
     </el-table>
 
-    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
+    <!-- 修改权限弹窗 -->
+    <el-dialog title="修改用户权限" :visible.sync="updateUserAccessVisible" @close="updateUserAccessClose">
       <el-form
         class="small-space"
-        :model="tmpUser"
+        :model="updateUserAccessForm"
         label-position="left"
         label-width="100px"
         style='width: 600px; margin-left:50px;'
       >
         <el-form-item label="用户">
           <template>
-            <span>{{ this.tmpUser.userId }}({{ this.tmpUser.userName }})</span>
+            <span>{{ this.updateUserAccessForm.userId }}({{ this.updateUserAccessForm.userName }})</span>
           </template>
         </el-form-item>
 
         <el-form-item label="菜单" required>
-          <el-checkbox-group v-model="tmpUser.menuIds">
+          <el-checkbox-group v-model="updateUserAccessForm.menuIds">
             <el-checkbox
               v-for="menu in allMenu"
               :label="menu.menuId"
@@ -104,7 +108,7 @@
                 </el-button>
               </span>
               <div style="flex: 1; margin-left: 20px;">
-                <el-checkbox-group v-model="tmpUser.permissions">
+                <el-checkbox-group v-model="updateUserAccessForm.permissions">
                   <el-checkbox
                     v-for="perm in permType.perms"
                     :label="perm.permId"
@@ -121,10 +125,76 @@
         </el-form-item>
       </el-form>
 
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="dialogFormVisible = false">取 消</el-button>
-        <el-button v-if="dialogStatus==='create'" type="success" @click="createRole">创 建</el-button>
-        <el-button type="primary" v-else @click="updateUserPermission">修 改</el-button>
+      <div slot="footer" class="dialog-footer" v-loading="updateAccessButtonLoading">
+        <el-button @click="updateUserAccessVisible = false">取 消</el-button>
+        <el-button type="primary" @click="updateUserPermission">修 改</el-button>
+      </div>
+    </el-dialog>
+
+    <!-- 新增权限弹窗 -->
+    <el-dialog title="新增权限" :visible.sync="addPermVisible" @close="addPermClose">
+      <el-form
+        ref="addPermForm"
+        class="small-space"
+        :rules="permRules"
+        :model="addPermForm"
+        label-position="left"
+        label-width="100px"
+        style='width: 600px; margin-left:50px;'
+      >
+        <el-form-item label="权限编码" prop="permCode" required>
+          <el-input v-model="addPermForm.permCode" placeholder="请输入权限编码" class="full-width-input"/>
+        </el-form-item>
+
+        <el-form-item label="权限名称" prop="permName" required>
+          <el-input v-model="addPermForm.permName" placeholder="请输入权限名称" class="full-width-input"/>
+        </el-form-item>
+
+        <el-form-item label="权限类型" prop="permType" required>
+          <el-select
+            v-model="addPermForm.permType"
+            placeholder="请选择权限类型"
+            filterable
+            allow-create>
+            <el-option
+              v-for="item in permissionTypeOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value">
+            </el-option>
+          </el-select>
+        </el-form-item>
+      </el-form>
+
+      <div slot="footer" class="dialog-footer" v-loading="addPermButtonLoading">
+        <el-button @click="addPermVisible = false">取 消</el-button>
+        <el-button type="primary" @click="addPermission">提 交</el-button>
+      </div>
+    </el-dialog>
+
+    <!-- 新增菜单弹窗 -->
+    <el-dialog title="新增菜单" :visible.sync="addMenuVisible" @close="addMenuClose">
+      <el-form
+        ref="addMenuForm"
+        class="small-space"
+        :rules="menuRules"
+        :model="addMenuForm"
+        label-position="left"
+        label-width="100px"
+        style='width: 600px; margin-left:50px;'
+      >
+        <el-form-item label="菜单编码" prop="menuCode" required>
+          <el-input v-model="addMenuForm.menuCode" placeholder="请输入菜单编码" class="full-width-input"/>
+        </el-form-item>
+
+        <el-form-item label="菜单名称" prop="menuName" required>
+          <el-input v-model="addMenuForm.menuName" placeholder="请输入菜单名称" class="full-width-input"/>
+        </el-form-item>
+      </el-form>
+
+      <div slot="footer" class="dialog-footer" v-loading="addMenuButtonLoading">
+        <el-button @click="addMenuVisible = false">取 消</el-button>
+        <el-button type="primary" @click="addMenu">提 交</el-button>
       </div>
     </el-dialog>
   </div>
@@ -139,17 +209,46 @@ export default {
       permTypeMap: [],
       allMenu: [],
       listLoading: false, // 数据加载等待动画
-      dialogStatus: 'create',
-      dialogFormVisible: false,
-      textMap: {
-        update: '编辑',
-        create: '新建角色'
+      updateUserAccessVisible: false,
+      addPermVisible: false,
+      addMenuVisible: false,
+      permissionTypeOptions: [],
+      updateAccessButtonLoading: false, // 控制按钮遮罩
+      addPermButtonLoading: false,
+      addMenuButtonLoading: false,
+      addPermForm: {
+        permCode: '',
+        permName: '',
+        permType: ''
       },
-      tmpUser: {
+      addMenuForm: {
+        menuCode: '',
+        menuName: ''
+      },
+      updateUserAccessForm: {
         menuIds: [],
         permissions: [],
       },
-      adminName: '管理员'
+      adminName: '管理员',
+      permRules: {
+        permCode: [
+          {required: true, message: '请输入权限编码', trigger: 'blur'}
+        ],
+        permName: [
+          {required: true, message: '请输入权限名称', trigger: 'blur'}
+        ],
+        permType: [
+          {required: true, message: '请选择权限类型', trigger: 'change'}
+        ]
+      },
+      menuRules: {
+        menuCode: [
+          {required: true, message: '请输入菜单编码', trigger: 'blur'}
+        ],
+        menuName: [
+          {required: true, message: '请输入菜单名称', trigger: 'blur'}
+        ]
+      },
     }
   },
 
@@ -172,6 +271,10 @@ export default {
           acc[permType.type] = permType.perms;
           return acc;
         }, {});
+        this.permissionTypeOptions = this.allPermission.map(perm => ({
+          label: perm.type,
+          value: perm.type
+        }));
       })
     },
 
@@ -193,101 +296,50 @@ export default {
     },
 
     updateAccess($index) {
-      this.tmpUser = {
+      this.updateUserAccessForm = {
         ...this.list[$index],
         menuIds: this.list[$index].menus.map(menu => menu.menuId),
         permissions: this.list[$index].permTypes.flatMap(permType =>
           permType.perms.map(item => item.permId)
-        ),
+        )
       };
-      this.dialogStatus = "update"
-      this.dialogFormVisible = true
-    },
-
-    showUpdate($index) {
-      let role = this.list[$index];
-      this.tmpUser.roleName = role.roleName;
-      this.tmpUser.roleId = role.roleId;
-      this.tmpUser.permissions = [];
-
-      for (let i = 0; i < role.menus.length; i++) {
-        let perm = role.menus[i].permissions;
-        for (let j = 0; j < perm.length; j++) {
-          this.tmpUser.permissions.push(perm[j].permissionId);
-        }
-      }
-
-      this.dialogStatus = "update"
-      this.dialogFormVisible = true
-    },
-
-    createRole() {
-      if (!this.checkRoleNameUnique()) {
-        return;
-      }
-
-      if (!this.checkPermMenuNum()) {
-        return;
-      }
-
-      // 添加新角色
-      this.api({
-        url: "/user/addRole",
-        method: "post",
-        data: this.tmpUser
-      }).then(() => {
-        this.getList();
-        this.dialogFormVisible = false
-      })
+      this.updateUserAccessVisible = true
     },
 
     updateUserPermission() {
       if (!this.checkPermMenuNum()) {
         return;
       }
-
+      this.updateAccessButtonLoading = true;
       // 修改角色
       this.api({
         url: "/access/update-user",
         method: "post",
-        data: this.tmpUser
+        data: this.updateUserAccessForm
       }).then(() => {
         this.getList();
         this.$message.success("更新成功");
-        this.dialogFormVisible = false
-      })
+      }).catch(() => {
+      }).finally(() => {
+        // 确保无论成功/失败都关闭加载状态
+        this.updateAccessButtonLoading = false;
+        this.updateUserAccessVisible = false;
+      });
     },
 
     checkPermMenuNum() {
       // 校验至少有一种权限
-      if (this.tmpUser.permissions.length === 0) {
+      if (this.updateUserAccessForm.permissions.length === 0) {
         this.$message.error("请至少选择一种权限");
         return false;
       }
 
-      if (this.tmpUser.menuIds.length === 0) {
+      if (this.updateUserAccessForm.menuIds.length === 0) {
         this.$message.error("请至少选择一种菜单");
         return false;
       }
 
       return true;
-    },
-
-    removeRole($index) {
-      let _vue = this;
-      let role = _vue.list[$index];
-
-      _vue.api({
-        url: "/user/deleteRole",
-        method: "post",
-        data: {
-          roleId: role.roleId
-        }
-      }).then(() => {
-        _vue.list.splice($index, 1);
-      }).catch(e => {
-        // 错误处理
-      })
     },
 
     isPermNone(permType) {
@@ -296,7 +348,7 @@ export default {
       let result = true;
 
       for (let j = 0; j < perms.length; j++) {
-        if (this.tmpUser.permissions.indexOf(perms[j].permId) > -1) {
+        if (this.updateUserAccessForm.permissions.indexOf(perms[j].permId) > -1) {
           result = false;
           break;
         }
@@ -311,7 +363,7 @@ export default {
       let result = true;
 
       for (let j = 0; j < perms.length; j++) {
-        if (this.tmpUser.permissions.indexOf(perms[j].permId) < 0) {
+        if (this.updateUserAccessForm.permissions.indexOf(perms[j].permId) < 0) {
           result = false;
           break;
         }
@@ -338,7 +390,7 @@ export default {
       let perms = this.permTypeMap[permType];
 
       for (let j = 0; j < perms.length; j++) {
-        this.addUnique(perms[j].permId, this.tmpUser.permissions)
+        this.addUnique(perms[j].permId, this.updateUserAccessForm.permissions)
       }
     },
 
@@ -347,9 +399,9 @@ export default {
       let perms = this.permTypeMap[permType];
 
       for (let j = 0; j < perms.length; j++) {
-        let idIndex = this.tmpUser.permissions.indexOf(perms[j].permId);
+        let idIndex = this.updateUserAccessForm.permissions.indexOf(perms[j].permId);
         if (idIndex > -1) {
-          this.tmpUser.permissions.splice(idIndex, 1);
+          this.updateUserAccessForm.permissions.splice(idIndex, 1);
         }
       }
     },
@@ -366,7 +418,7 @@ export default {
       // 本方法会在勾选状态改变之后触发
       let permId = _perm.id;
 
-      if (this.tmpUser.permissions.indexOf(permId) > -1) {
+      if (this.updateUserAccessForm.permissions.indexOf(permId) > -1) {
         // 选中事件
         // 如果之前未勾选本权限,现在勾选完之后,tempRole里就会包含本id
         // 那么就要将必选的权限勾上
@@ -380,7 +432,6 @@ export default {
         }
       }
     },
-
     makeReuqiredPermissionChecked(_index) {
       // 将本菜单必选的权限勾上
       let menu = this.allPermission[_index].permissions;
@@ -389,10 +440,81 @@ export default {
         let perm = menu[j];
         if (perm.requiredPerm === 1) {
           // 找到本菜单的必选权限,将其勾上
-          this.addUnique(perm.id, this.tmpUser.permissions)
+          this.addUnique(perm.id, this.updateUserAccessForm.permissions)
         }
       }
-    }
+    },
+    addPermClose() {
+      this.addPermForm = {
+        permCode: '',
+        permName: '',
+        permType: ''
+      };
+      // 清空valid
+      this.$refs.addPermForm.clearValidate();
+    },
+    addMenuClose() {
+      this.addMenuForm = {
+        menuCode: '',
+        menuName: '',
+      };
+      // 清空valid
+      this.$refs.addMenuForm.clearValidate();
+    },
+    updateUserAccessClose() {
+      this.updateUserAccessForm = {
+        menuIds: [],
+        permissions: []
+      }
+    },
+    addPermission() {
+      var addPermForm = this.addPermForm;
+      this.$refs.addPermForm.validate(valid => {
+        if (valid) {
+          this.addPermButtonLoading = true;
+          // 修改角色
+          this.api({
+            url: "/access/add-perm",
+            method: "post",
+            data: addPermForm
+          }).then(() => {
+            this.getAllPermisson();
+            this.$message.success("新增成功");
+          }).catch(() => {
+          }).finally(() => {
+            // 确保无论成功/失败都关闭加载状态
+            this.addPermVisible = false;
+            this.addPermButtonLoading = false;
+          });
+        } else {
+          return false;
+        }
+      });
+    },
+    addMenu() {
+      var addMenuForm = this.addMenuForm;
+      this.$refs.addMenuForm.validate(valid => {
+        if (valid) {
+          this.addMenuButtonLoading = true;
+          // 修改角色
+          this.api({
+            url: "/access/add-menu",
+            method: "post",
+            data: addMenuForm
+          }).then(() => {
+            this.getAllPermisson();
+            this.$message.success("新增成功");
+          }).catch(() => {
+          }).finally(() => {
+            // 确保无论成功/失败都关闭加载状态
+            this.addMenuVisible = false;
+            this.addMenuButtonLoading = false;
+          });
+        } else {
+          return false;
+        }
+      });
+    },
   }
 }
 </script>

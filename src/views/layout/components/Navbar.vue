@@ -23,20 +23,22 @@
 
 <script>
 // 修改此处，采用解构赋值导入 mapGetters
-import { mapGetters } from 'vuex';
+import {mapGetters} from 'vuex';
 import Breadcrumb from '@/components/Breadcrumb';
 import Hamburger from '@/components/Hamburger';
-import img_avatar from '@/assets/avatar.jpg';
 
 export default {
   data() {
     return {
-      img_avatar
+      img_avatar: this.$store.modules.user.avatar
     };
   },
   components: {
     Breadcrumb,
     Hamburger
+  },
+  mounted() {
+    this.getAvatar();
   },
   computed: {
     ...mapGetters([
@@ -50,6 +52,16 @@ export default {
     logout() {
       this.$store.dispatch('LogOut').then(() => {
         location.reload(); // 为了重新实例化vue-router对象 避免bug
+      });
+    },
+    getAvatar() {
+      this.api({
+        url: "/sa/avatar",
+        method: "get",
+        params: this.img_avatar
+      }).then(data => {
+
+      }).catch(error => {
       });
     }
   }

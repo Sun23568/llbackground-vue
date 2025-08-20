@@ -56,6 +56,23 @@ module.exports = {
       }
     }
 
+    config.module.rules.delete("svg");
+    config.module
+      .rule('svg')
+      .exclude.add(resolve('src/icons'))
+      .end()
+    config.module
+      .rule('svg-sprite')
+      .test(/\.(svg)(\?.*)?$/i)
+      .include
+      .add(resolve('src/icons'))
+      .end()
+      .use('svg-sprite-loader')
+      .loader('svg-sprite-loader')
+      .options({
+        symbolId: 'icon-[name]'
+      })
+
     // 5. Quill 编辑器兼容处理
     config.module
       .rule('js')
@@ -73,6 +90,7 @@ module.exports = {
   },
 
   devServer: {
+    port: 8086,
     proxy: {
       '/api': {
         target: 'http://localhost:8080',

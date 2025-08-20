@@ -8,27 +8,21 @@
         </el-form-item>
       </el-form>
     </div>
-    <el-table :data="list" v-loading="listLoading"  border fit
+    <el-table :data="list" v-loading="listLoading" border fit
               highlight-current-row>
       <el-table-column align="center" label="序号" width="80">
         <template slot-scope="scope">
           <span v-text="getIndex(scope.$index)"> </span>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="用户名" prop="username" style="width: 60px;"></el-table-column>
-      <el-table-column align="center" label="角色" width="200">
-        <template slot-scope="scope">
-          <div style="margin-right: 4px;display: inline-block" v-for="i in scope.row.roles">
-            <el-tag type="success" v-text="i.roleName" v-if="i.roleId===1"></el-tag>
-            <el-tag type="primary" v-text="i.roleName" v-else></el-tag>
-          </div>
-        </template>
-      </el-table-column>
+      <el-table-column align="center" label="用户ID" prop="userId" style="width: 20px;"></el-table-column>
+      <el-table-column align="center" label="用户名" prop="userName" style="width: 20px;"></el-table-column>
       <el-table-column align="center" label="创建时间" prop="createTime" width="170"></el-table-column>
       <el-table-column align="center" label="最近修改时间" prop="updateTime" width="170"></el-table-column>
-      <el-table-column align="center" label="管理" width="220" >
+      <el-table-column align="center" label="管理" width="220">
         <template slot-scope="scope">
-          <el-button type="primary" icon="edit" @click="showUpdate(scope.$index)" v-permission="'user:update'">修改</el-button>
+          <el-button type="primary" icon="edit" @click="showUpdate(scope.$index)" v-permission="'user:update'">修改
+          </el-button>
           <el-button type="danger" icon="delete" v-if="scope.row.userId!==userId "
                      @click="removeUser(scope.$index)" v-permission="'user:update'">删除
           </el-button>
@@ -44,30 +38,43 @@
       :page-sizes="[10, 20, 50, 100]"
       layout="total, sizes, prev, pager, next, jumper">
     </el-pagination>
-    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
-      <el-form class="small-space" :model="tempUser" label-position="left" label-width="80px"
-               style='width: 300px; margin-left:50px;'>
-        <el-form-item label="用户名" required v-if="dialogStatus==='create'">
-          <el-input type="text" v-model="tempUser.username">
+    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible" width="30%">
+      <el-form class="small-space" :model="tempUserForm" label-position="left" label-width="80px">
+        <el-form-item label="用户ID" required>
+          <el-input type="text" v-model="tempUserForm.userId">
+          </el-input>
+        </el-form-item>
+        <el-form-item label="用户名" required>
+          <el-input type="text" v-model="tempUserForm.userName" autocomplete="new-password">
           </el-input>
         </el-form-item>
         <el-form-item label="密码" v-if="dialogStatus==='create'" required>
-          <el-input type="password" v-model="tempUser.password">
-          </el-input>
+          <el-input type="password" v-model="tempUserForm.password" autocomplete="new-password"
+                    @input="validConfirmPassword"/>
         </el-form-item>
         <el-form-item label="新密码" v-else>
-          <el-input type="password" v-model="tempUser.password" placeholder="不填则表示不修改">
+          <el-input type="password" v-model="tempUserForm.password" placeholder="不填则表示不修改"
+                    autocomplete="new-password" @input="validConfirmPassword"/>
+        </el-form-item>
+        <el-form-item label="密码确认" :error="confirmPasswordError ? '两次输入密码不一致' : ''">
+          <el-input type="password" v-model="tempUserForm.confirmPassword" autocomplete="new-password"
+                    @input="validConfirmPassword">
+            <div v-if="confirmPasswordError" class="el-form-item__error">
+              两次输入密码不一致
+            </div>
           </el-input>
         </el-form-item>
-        <el-form-item label="角色" required>
-          <el-select v-model="tempUser.roleIds" multiple placeholder="支持多角色" style="width: 300px">
-            <el-option
-              v-for="item in roles"
-              :key="item.roleId"
-              :label="item.roleName"
-              :value="item.roleId">
-            </el-option>
-          </el-select>
+        <el-form-item label="头像">
+          <el-upload
+            class="avatar-uploader"
+            action=""
+            :auto-upload="false"
+            :show-file-list="false"
+            :on-change="handleFileChange">
+            <img v-if="tempUserForm.avatarBase64" :src="tempUserForm.avatarBase64" class="avatar" />
+            <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+          </el-upload>
+          <div class="avatar-tip">支持JPG/PNG格式，大小不超过2MB</div>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -80,37 +87,37 @@
 </template>
 <script>
 import {mapGetters} from 'vuex'
+import {sm3} from "sm-crypto";
 
 export default {
   data() {
     return {
+      confirmPasswordError: false, // 新增错误状态
+      uploadAvatarUrl: "/api/upload-avatar", // 替换为实际接口地址
       totalCount: 0, //分页组件--数据总条数
       list: [],//表格的数据
       listLoading: false,//数据加载等待动画
       listQuery: {
         pageNum: 1,//页码
-        pageRow: 50,//每页条数
+        pageRow: 10,//每页条数
       },
-      roles: [],//角色列表
       dialogStatus: 'create',
       dialogFormVisible: false,
       textMap: {
         update: '编辑',
         create: '新建用户'
       },
-      tempUser: {
-        username: '',
+      tempUserForm: {
+        userName: '',
         password: '',
-        roleIds: [],
-        userId: ''
+        userId: '',
+        confirmPassword: '',
+        avatarBase64: ''
       }
     }
   },
   created() {
     this.getList();
-    if (this.hasPerm('user:add') || this.hasPerm('user:update')) {
-      this.getAllRoles();
-    }
   },
   computed: {
     ...mapGetters([
@@ -118,25 +125,18 @@ export default {
     ])
   },
   methods: {
-    getAllRoles() {
-      this.api({
-        url: "/user/getAllRoles",
-        method: "get"
-      }).then(data => {
-        this.roles = data.list;
-      })
-    },
     getList() {
       //查询列表
       this.listLoading = true;
       this.api({
         url: "/user/list",
-        method: "get",
+        method: "post",
         params: this.listQuery
       }).then(data => {
         this.listLoading = false;
-        this.list = data.list;
-        this.totalCount = data.totalCount;
+        this.list = data.items;
+        this.totalCount = data.total;
+      }).catch(e => {
       })
     },
     handleSizeChange(val) {
@@ -160,60 +160,81 @@ export default {
     },
     showCreate() {
       //显示新增对话框
-      this.tempUser.username = "";
-      this.tempUser.password = "";
-      this.tempUser.roleIds = [];
-      this.tempUser.userId = "";
+      this.tempUserForm = {
+        userName: '',
+        password: '',
+        userId: '',
+        confirmPassword: ''
+      }
       this.dialogStatus = "create"
       this.dialogFormVisible = true
+      this.confirmPasswordError = false;
     },
     showUpdate($index) {
       let user = this.list[$index];
-      this.tempUser.username = user.username;
-      this.tempUser.roleIds = user.roles.map(x => x.roleId);
-      this.tempUser.userId = user.userId;
-      this.tempUser.deleteStatus = '1';
-      this.tempUser.password = '';
+      this.tempUserForm.userName = user.userName;
+      this.tempUserForm.userId = user.userId;
+      this.tempUserForm.deleteStatus = '1';
+      this.tempUserForm.password = '';
       this.dialogStatus = "update"
       this.dialogFormVisible = true
     },
     validate(isCreate) {
-      let u = this.tempUser
-      if (isCreate && u.username.trim().length === 0) {
-        this.$message.warning('请填写用户名')
-        return false
+      let u = this.tempUserForm
+      if (u.userId.trim().length === 0) {
+        this.$message.warning('请填写用户ID');
+        return false;
+      }
+      if (isCreate && u.userName.trim().length === 0) {
+        this.$message.warning('请填写用户名');
+        return false;
       }
       if (isCreate && u.password.length === 0) {
-        this.$message.warning('请填写密码')
-        return false
+        this.$message.warning('请填写密码');
+        return false;
       }
-      if (u.roleIds.length === 0) {
-        this.$message.warning('请选择角色')
-        return false
+      // 密码必须包含数字、字母、特殊字符
+      if (isCreate && !/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[~!@#$%^&*()_+`\-={}:";'<>?,./]).{8,20}$/.test(u.password)) {
+        this.$message.warning('密码必须包含数字、字母、特殊字符且大于8位');
+        return false;
+      }
+      if (u.password !== u.confirmPassword) {
+        return false;
       }
       return true
     },
     createUser() {
       if (!this.validate(true)) return
+      const tmp = {
+        ...this.tempUserForm,
+        password: sm3(this.tempUserForm.password),
+        confirmPassword: sm3(this.tempUserForm.confirmPassword)
+      }
       //添加新用户
       this.api({
-        url: "/user/addUser",
+        url: "/user/add",
         method: "post",
-        data: this.tempUser
+        data: tmp
       }).then(() => {
         this.$message.success('添加成功')
         this.getList();
         this.dialogFormVisible = false
+      }).catch(() => {
       })
     },
     updateUser() {
       if (!this.validate(false)) return
       //修改用户信息
+      const tmp = {
+        ...this.tempUserForm,
+        password: sm3(this.tempUserForm.password),
+        confirmPassword: sm3(this.tempUserForm.confirmPassword)
+      }
       let _vue = this;
       this.api({
-        url: "/user/updateUser",
+        url: "/user/update",
         method: "post",
-        data: this.tempUser
+        data: tmp
       }).then(() => {
         this.$message.success('修改成功')
         this.dialogFormVisible = false
@@ -230,7 +251,6 @@ export default {
       }).then(() => {
         let user = _vue.list[$index];
         user.deleteStatus = '2';
-        user.roleIds = user.roles.map(x => x.roleId)
         _vue.api({
           url: "/user/updateUser",
           method: "post",
@@ -243,6 +263,66 @@ export default {
         })
       })
     },
+    validConfirmPassword() {
+      this.confirmPasswordError =
+        this.tempUserForm.password !== this.tempUserForm.confirmPassword
+    },
+    handleFileChange(file) {
+      const isJPG = file.raw.type === 'image/jpeg';
+      const isLt2M = file.size / 1024 / 1024 < 2;
+
+      if (!isJPG) {
+        this.$message.error('上传头像图片只能是 JPG 格式!');
+        return false;
+      }
+      if (!isLt2M) {
+        this.$message.error('上传头像图片大小不能超过 2MB!');
+        return false;
+      }
+      const rawFile = file.raw;
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        this.$set(this.tempUserForm, 'avatarBase64', e.target.result);
+      };
+      reader.readAsDataURL(rawFile);
+      return true;
+    },
+    saveAvatar() {
+      console.log(11111111)
+    }
   }
 }
 </script>
+<style>
+.dialog-footer {
+  text-align: center !important;
+}
+
+.avatar-uploader .el-upload {
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.avatar-uploader .el-upload:hover {
+  border-color: #409EFF;
+}
+
+.avatar-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+  width: 178px;
+  height: 178px;
+  line-height: 178px;
+  text-align: center;
+}
+
+.avatar {
+  width: 178px;
+  height: 178px;
+  display: block;
+}
+</style>

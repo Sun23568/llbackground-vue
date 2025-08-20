@@ -46,7 +46,6 @@ export function getToken() {
 }
 
 export function setToken(token) {
-  console.log(token)
   return setStorage(TokenKey, token)
 }
 

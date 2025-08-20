@@ -12,15 +12,16 @@ const user = {
     menus: [],
     permissions: [],
     serverPublicKey: "",
+    avatar: "",
   },
   mutations: {
     SET_USER: (state, userInfo) => {
       const info = userInfo.userSession;
       state.userId = info.userId;
       state.userName = info.userName;
-      // state.roleIds = userInfo.roleIds;
       state.menus = info.userCacheItemVo.menus;
       state.permissions = info.userCacheItemVo.perms;
+      state.avatar = info.userCacheItemVo.avatar;
     },
     RESET_USER: (state) => {
       state.userId = "";
@@ -28,25 +29,9 @@ const user = {
       state.menus = [];
       state.permissions = [];
       state.serverPublicKey = ""; // 重置时也清空公钥
-    },
-    SET_PUBLIC_KEY: (state, publicKey) => {
-      state.serverPublicKey = publicKey;
     }
   },
-  actions: {// 获取服务器公钥
-    GetServerPublicKey({commit}) {
-      return new Promise((resolve, reject) => {
-        api({
-          url: "/sa/publicKey",
-          method: "get"
-        }).then(data => {
-          commit('SET_PUBLIC_KEY', data.publicKey);
-          resolve(data.publicKey);
-        }).catch(err => {
-          reject(err);
-        });
-      });
-    },
+  actions: {
     // 登录
     Login({commit, state}, loginForm) {
       const param = {
