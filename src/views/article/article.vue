@@ -13,13 +13,13 @@
       <el-table-column align="left" prop="title" label="文章标题" style="width: 60px;"></el-table-column>
       <el-table-column align="center" label="管理">
         <template slot-scope="scope">
-          <el-button type="primary" icon="edit" @click="openTab(scope.row.id, 'edit')" v-permission="'article:update'">
+          <el-button type="primary" icon="edit" @click="openTab(scope.row.pkId, 'edit')" v-permission="'article:update'">
             修改
           </el-button>
-          <el-button type="primary" icon="edit" @click="openTab(scope.row.id, 'view')" v-permission="'article:update'">
+          <el-button type="primary" icon="edit" @click="openTab(scope.row.pkId, 'view')" v-permission="'article:update'">
             查看
           </el-button>
-          <el-button type="primary" icon="edit" @click="removeArticle(scope.row.id)" v-permission="'article:update'">
+          <el-button type="primary" icon="edit" @click="removeArticle(scope.row.pkId)" v-permission="'article:update'">
             删除
           </el-button>
         </template>
@@ -62,7 +62,7 @@ export default {
   },
   methods: {
     viewContent(row) {
-      this.openTab(row.id, 'view');
+      this.openTab(row.pkId, 'view');
     },
     getList() {
       //查询列表
@@ -71,14 +71,16 @@ export default {
       }
       this.listLoading = true;
       this.api({
-        url: "/article/listArticle",
+        url: "/article/list",
         method: "get",
         params: this.listQuery
       }).then(data => {
         this.listLoading = false;
-        this.list = data.list;
-        this.totalCount = data.totalCount;
-      })
+        this.list = data.items
+        this.totalCount = data.total;
+      }).catch(error => {
+        this.listLoading = false;
+      });
     },
 
     showCreate() {

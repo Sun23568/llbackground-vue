@@ -9,7 +9,6 @@
             <el-input type="text" id="title" v-model="title" placeholder="请输入文章标题" class="full-width-input"/>
           </el-form-item>
           <hr class="separator"/>
-          <span class="hljs-variable">123123123</span>
           <quill-editor v-model="content" :options="editOption" @ready="onEditorReady"/>
         </div>
         <div v-if="viewMode">
@@ -83,7 +82,7 @@ export default {
             }
           },
           syntax: {
-            highlight: text =>  {
+            highlight: text => {
               console.log('high before', text)
               const tempDiv = document.createElement('div');
               tempDiv.innerHTML = text;
@@ -106,9 +105,9 @@ export default {
     // 获取文章信息
     if (articleId) {
       this.api({
-        url: '/article/getArticleById',
-        method: 'get',
-        params: {
+        url: '/article/query/content',
+        method: 'post',
+        data: {
           articleId: articleId,
           craft: '0'
         }
@@ -118,7 +117,8 @@ export default {
         this.$nextTick(() => {
           this.addImageClickListeners();
         });
-      });
+      }).catch(error => {
+      })
     }
   },
   methods: {
