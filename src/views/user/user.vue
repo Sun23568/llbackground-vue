@@ -59,22 +59,7 @@
         <el-form-item label="密码确认" :error="confirmPasswordError ? '两次输入密码不一致' : ''">
           <el-input type="password" v-model="tempUserForm.confirmPassword" autocomplete="new-password"
                     @input="validConfirmPassword">
-            <div v-if="confirmPasswordError" class="el-form-item__error">
-              两次输入密码不一致
-            </div>
           </el-input>
-        </el-form-item>
-        <el-form-item label="头像">
-          <el-upload
-            class="avatar-uploader"
-            action=""
-            :auto-upload="false"
-            :show-file-list="false"
-            :on-change="handleFileChange">
-            <img v-if="tempUserForm.avatarBase64" :src="tempUserForm.avatarBase64" class="avatar" />
-            <i v-else class="el-icon-plus avatar-uploader-icon"></i>
-          </el-upload>
-          <div class="avatar-tip">支持JPG/PNG格式，大小不超过2MB</div>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -93,7 +78,6 @@ export default {
   data() {
     return {
       confirmPasswordError: false, // 新增错误状态
-      uploadAvatarUrl: "/api/upload-avatar", // 替换为实际接口地址
       totalCount: 0, //分页组件--数据总条数
       list: [],//表格的数据
       listLoading: false,//数据加载等待动画
@@ -112,7 +96,6 @@ export default {
         password: '',
         userId: '',
         confirmPassword: '',
-        avatarBase64: ''
       }
     }
   },
@@ -267,30 +250,6 @@ export default {
       this.confirmPasswordError =
         this.tempUserForm.password !== this.tempUserForm.confirmPassword
     },
-    handleFileChange(file) {
-      const isJPG = file.raw.type === 'image/jpeg';
-      const isLt2M = file.size / 1024 / 1024 < 2;
-
-      if (!isJPG) {
-        this.$message.error('上传头像图片只能是 JPG 格式!');
-        return false;
-      }
-      if (!isLt2M) {
-        this.$message.error('上传头像图片大小不能超过 2MB!');
-        return false;
-      }
-      const rawFile = file.raw;
-      const reader = new FileReader();
-
-      reader.onload = (e) => {
-        this.$set(this.tempUserForm, 'avatarBase64', e.target.result);
-      };
-      reader.readAsDataURL(rawFile);
-      return true;
-    },
-    saveAvatar() {
-      console.log(11111111)
-    }
   }
 }
 </script>

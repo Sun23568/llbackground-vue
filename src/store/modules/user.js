@@ -21,7 +21,7 @@ const user = {
       state.userName = info.userName;
       state.menus = info.userCacheItemVo.menus;
       state.permissions = info.userCacheItemVo.perms;
-      state.avatar = info.userCacheItemVo.avatar;
+      state.avatar = info.userCacheItemVo.user.avatar;
     },
     RESET_USER: (state) => {
       state.userId = "";
