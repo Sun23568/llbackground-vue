@@ -113,7 +113,6 @@ export default {
           type: 'success'
         });
         // 关闭当前tab页的逻辑
-        debugger;
         // window.close();
         // 发送消息到 article.vue
         window.opener.postMessage('articleSaved', '*');

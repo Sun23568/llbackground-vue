@@ -3,25 +3,33 @@
     <div class="editor" ref="editor" :style="styles"></div>
   </div>
 </template>
-<!-- 在引入Quill前加载highlight.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/default.min.css">
-
 <script>
-import Quill from "quill";
-import hljs from 'highlight.js/lib/core';
-import "quill/dist/quill.core.css";
-import "quill/dist/quill.snow.css";
-import "quill/dist/quill.bubble.css";
-import java from 'highlight.js/lib/languages/java';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/github.css'; // 确保导入了样式
+
 import javascript from 'highlight.js/lib/languages/javascript';
+import java from 'highlight.js/lib/languages/java';
 import python from 'highlight.js/lib/languages/python';
-import vbscript from 'highlight.js/lib/languages/vbscript-html';
-hljs.registerLanguage('java', java);
+
+// 注册语言
 hljs.registerLanguage('javascript', javascript);
+hljs.registerLanguage('java', java);
 hljs.registerLanguage('python', python);
-hljs.registerLanguage('vbscript-html', vbscript);
-window.hljs = hljs;
+
+// !!! 关键步骤：在导入 Quill 之前，将 hljs 挂载到全局 window 对象上
+window.hljs = hljs; // [!code ++]
+
+// 现在再导入 Quill 和相关模块
+import Quill from 'quill';
+import 'quill/dist/quill.core.css';
+import 'quill/dist/quill.snow.css';
+import 'quill/dist/quill.bubble.css';
+import QuillBetterTable from 'quill-better-table';
+
+Quill.register({
+  'modules/better-table': QuillBetterTable
+}, true)
+
 export default {
   name: "Editor",
   props: {
@@ -50,9 +58,29 @@ export default {
         bounds: document.body,
         debug: "warn",
         modules: {
-          table: true,
+          'better-table': {
+            operationMenu: {
+              items: {
+                unmergeCells: {
+                  text: 'Another unmerge cells name'
+                }
+              }
+            }
+          },
+          keyboard: {
+            bindings: QuillBetterTable.keyboardBindings
+          },
           syntax: {
-            highlight: text => hljs.highlightAuto(text).value
+            highlight: (text) => {
+              try {
+                // 使用 highlightAuto 自动检测语言并进行高亮
+                const result = hljs.highlightAuto(text);
+                return result.value;
+              } catch (error) {
+                console.error('代码高亮错误:', error);
+                return text; // 如果出错，返回原始文本
+              }
+            }
           },
           toolbar: {
             container: [
@@ -61,13 +89,7 @@ export default {
               [{header: 1}, {header: 2}], // 标题，键值对的形式；1、2表示字体大小
               [{list: "ordered"}, {list: "bullet"}], //列表
               [{script: "sub"}, {script: "super"}], // 上下标
-              [
-                {table: 'TD'},
-                {'table-insert-row': 'TIR'},
-                {'table-insert-column': 'TIC'},
-                {'table-delete-row': 'TDR'},
-                {'table-delete-column': 'TDC'}
-              ],
+              ['table'],
               [{indent: "-1"}, {indent: "+1"}], // 缩进
               [{direction: "rtl"}], // 文本方向
               [{'size': ['12px', '14px', '16px', '20px', '24px', '32px']}], // 字体大小
@@ -81,28 +103,21 @@ export default {
             handlers: {
               //实现首行缩进的功能
               wordBox: function (val) {
-                let range = this.quill.getSelection();
-                this.quill.insertText(range.index, '\t', {'style': 'text-indent: 2em;'});
+                const quill = this.quill;
+                const range = quill.getSelection();
+                if (!range) return;
+
+                // 👇 用 Quill 的 formatText  API 给选中段落加缩进样式
+                quill.formatText(
+                  range.index,
+                  range.length,
+                  { 'text-indent': '2em' },
+                  Quill.sources.USER
+                );
               },
-              //增加表格
-              table: function (val) {
-                this.quill.getModule('table').insertTable(2, 3)
-              },
-              //插入行
-              'table-insert-row': function () {
-                this.quill.getModule('table').insertRowBelow()
-              },
-              //插入列
-              'table-insert-column': function () {
-                this.quill.getModule('table').insertColumnRight()
-              },
-              //删除行
-              'table-delete-row': function () {
-                this.quill.getModule('table').deleteRow()
-              },
-              //删除列
-              'table-delete-column': function () {
-                this.quill.getModule('table').deleteColumn()
+              table: function () {
+                // 插入一个 2行2列 的表格（可自定义行数/列数）
+                this.quill.getModule('better-table').insertTable(2, 2);
               }
             }
           }
@@ -146,10 +161,6 @@ export default {
         {Choice: '.ql-align .ql-picker-item[data-value="right"]', title: '居右对齐'},
         {Choice: '.ql-align .ql-picker-item[data-value="justify"]', title: '两端对齐'},
         {Choice: '.ql-table', title: '添加表格'},
-        {Choice: '.ql-table-insert-row', title: '插入行'},
-        {Choice: '.ql-table-insert-column', title: '插入列'},
-        {Choice: '.ql-table-delete-row', title: '删除行'},
-        {Choice: '.ql-table-delete-column', title: '删除列'},
       ]
     }
   },
@@ -188,7 +199,6 @@ export default {
   methods: {
     init() {
       // 初始化
-      debugger;
       const editor = this.$refs.editor;
       this.quill = new Quill(editor, this.options);
       this.quill.clipboard.dangerouslyPasteHTML(this.currentValue);
@@ -324,36 +334,6 @@ export default {
 
   .ql-snow .ql-picker.ql-size .ql-picker-label[data-value='32px']::before, .ql-snow .ql-picker.ql-size .ql-picker-item[data-value='32px']::before {
     content: '32px';
-  }
-
-  /* 设置表格操作的几个按钮图标，可以在 www.iconfont.cn 找 */
-
-  .ql-toolbar .ql-table-insert-row {
-    background-image: url('~@/assets/quillInsertRow.svg') !important;;
-    background-size: 14px 14px;
-    background-repeat: no-repeat;
-    background-position: center;
-  }
-
-  .ql-toolbar .ql-table-insert-column {
-    background-image: url('~@/assets/quillInsertCol.svg') !important;;
-    background-size: 14px 14px;
-    background-repeat: no-repeat;
-    background-position: center;
-  }
-
-  .ql-toolbar .ql-table-delete-row {
-    background-image: url('~@/assets/quillDeleteRow.svg') !important;;
-    background-size: 14px 14px;
-    background-repeat: no-repeat;
-    background-position: center;
-  }
-
-  .ql-toolbar .ql-table-delete-column {
-    background-image: url('~@/assets/quillDeleteCol.svg') !important;;
-    background-size: 14px 14px;
-    background-repeat: no-repeat;
-    background-position: center;
   }
 }
 </style>
