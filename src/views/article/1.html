@@ -1,0 +1,69 @@
+<html>\n
+<head></head>
+\n
+<body>\n <p><span class=\"ql-size-large\"> </span>在一次机缘巧合下，我接触到了 AutoDL
+  平台。该平台为我提供了便捷使用在线算力服务器的途径。当时，DeepSeek 正热度飙升，于是我在 AutoDL 上租用了一台搭载 NVIDIA
+  GeForce RTX 4090 的算力服务器。基于 Ollama，我成功搭建了第一版 DeepSeek 环境。</p>\n <p><br></p>\n <p>后续深入探索 Ollama
+  时，我了解到能够通过编写其配置文件，定制特定功能的模型。其中，角色扮演模型的定制引起了我的兴趣。我着手创建了一个角色扮演模型，用户与该模型对话时，模型会依据我在配置文件中设定的角色设定进行交互。在配置文件里，我精心定义了角色的语言结构，采用【动作、表情】(心理)
+  说话内容 这种格式，极大丰富了角色的表现力。</p>\n <p><br></p>\n <p>完成模型搭建后，为了将其投入实际应用，我租用了阿里云的
+  ECS
+  服务器，并搭建了简易的前后端架构。通过对定制模型的封装，实现了用户与模型间流畅、稳定的对话功能。此后，我持续对模型进行优化完善，不断提升其性能与交互体验，使其逐渐具备较高的可玩性。</p>
+\n <p><br></p>\n <p>近期，我又发现了 ComfyUI 这一强大工具，它支持通过输入关键词实现文生图功能，并且可以从 LibLib
+  等资源库下载丰富多样的模型，以此生成诸如漫画、剪纸、写实等风格各异的图片。在技术探索过程中，我成功将 ComfyUI 与 Ollama
+  相结合，构建了对话 + 文生图的串联系统。这一创新整合，使得用户与模型对话时，能够同时获取文本回复与相关联的生成图片，真正实现了图文结合的沉浸式交互体验
+  。</p>\n <p><br></p>\n
+<blockquote>\n 流程图\n</blockquote>
+\n <p><img src=\"/api/article/getImg?fileId=6e860dc6f42a43f9b27fb6b79bf5775c\"
+           data-original-src=\"/api/article/getImg?fileId=6e860dc6f42a43f9b27fb6b79bf5775c\"></p>\n <p><br></p>\n
+<blockquote>\n 前后端流式响应实现\n</blockquote>
+\n
+<blockquote>\n 使用SSE遇到页面切出后，不继续保持流式传输的问题，故而使用原生实现\n</blockquote>
+\n
+<blockquote>\n 后端\n</blockquote>
+\n
+<pre class=\"ql-syntax\" spellcheck=\"false\"><span class=\"hljs-comment\">/**\n * 生成参数-测试\n *\n * @param ollamaChatDto\n * @param response\n */</span>\npublic <span
+  class=\"hljs-literal\">void</span> generateTest(OllamaChatDto ollamaChatDto, HttpServletResponse response) {\n    executor.execute<span
+  class=\"hljs-function\"><span class=\"hljs-params\">(() -&gt; {\n        PrintWriter writer = <span
+  class=\"hljs-literal\">null</span>;\n        <span class=\"hljs-keyword\">try</span> {\n            writer = <span
+  class=\"hljs-keyword\">new</span> PrintWriter(response.getWriter());\n            <span
+  class=\"hljs-keyword\">for</span> (int index = <span class=\"hljs-number\">0</span>; index &lt; <span
+  class=\"hljs-number\">10</span>; index++) {\n                writer.write(index + <span class=\"hljs-string\">\"\\\\n\"</span>);\n                writer.flush();\n                <span
+  class=\"hljs-keyword\">try</span> {\n                    Thread.sleep(<span class=\"hljs-number\">1000</span>);\n                } <span
+  class=\"hljs-keyword\">catch</span> (InterruptedException e) {\n                    e.printStackTrace();\n                }\n            }\n        } <span
+  class=\"hljs-keyword\">catch</span> (Exception e) {\n\n        } <span class=\"hljs-keyword\">finally</span> {\n            <span
+  class=\"hljs-keyword\">try</span> {\n                writer.close();\n            } <span
+  class=\"hljs-keyword\">catch</span> (Exception e) {\n                e.printStackTrace();\n            }\n        }\n    })</span>;\n}\n</span></pre>
+\n <p><br></p>\n
+<blockquote>\n 前端\n</blockquote>
+\n
+<pre class=\"ql-syntax\" spellcheck=\"false\"><span class=\"hljs-keyword\">async</span> <span class=\"hljs-title
+                                                                                              function_\">fetchStream</span>
+  (<span class=\"hljs-params\">body, onChunk</span>) {\n  <span class=\"hljs-keyword\">const</span> response = <span
+    class=\"hljs-keyword\">await</span> <span class=\"hljs-title function_\">fetch</span>(<span class=\"hljs-string\">`/api/ollama/chat`</span>, {\n    <span
+    class=\"hljs-attr\">method</span>: <span class=\"hljs-string\">'POST'</span>,\n    <span
+    class=\"hljs-attr\">headers</span>: {\n      <span class=\"hljs-string\">'Content-Type'</span>: <span
+    class=\"hljs-string\">'application/json;charset=UTF-8'</span>,\n    },\n    <span
+    class=\"hljs-attr\">body</span>: <span class=\"hljs-title class_\">JSON</span>.<span class=\"hljs-title function_\">stringify</span>
+  (body)\n  });\n  <span class=\"hljs-keyword\">const</span> reader = response.<span class=\"hljs-property\">body</span>.<span
+    class=\"hljs-title function_\">getReader</span>();\n  <span class=\"hljs-keyword\">let</span> done = <span
+    class=\"hljs-literal\">false</span>;\n  <span class=\"hljs-keyword\">let</span> started = <span
+    class=\"hljs-literal\">false</span>; <span class=\"hljs-comment\">// 新增: 标记是否已经开始处理非回车字符</span>\n\n  <span
+    class=\"hljs-keyword\">while</span> (!done) {\n    <span class=\"hljs-keyword\">const</span> {value, <span
+    class=\"hljs-attr\">done</span>: doneReading} = <span class=\"hljs-keyword\">await</span> reader.<span
+    class=\"hljs-title function_\">read</span>();\n    done = doneReading;\n    <span
+    class=\"hljs-comment\">// 解码</span>\n    <span class=\"hljs-keyword\">let</span> decodedValue = <span
+    class=\"hljs-string\">\"\"</span>;\n    <span
+    class=\"hljs-keyword\">if</span> (value) {\n      decodedValue += <span class=\"hljs-keyword\">new</span> <span
+    class=\"hljs-title class_\">TextDecoder</span>(<span class=\"hljs-string\">'utf-8'</span>).<span class=\"hljs-title
+                                                                                                     function_\">decode</span>
+  (value).<span class=\"hljs-title function_\">replaceAll</span>(<span class=\"hljs-string\">'\\\\n'</span>, <span
+    class=\"hljs-string\">'\\n'</span>);\n    }\n    <span class=\"hljs-comment\">// 找到第一个非回车字符的位置</span>\n    <span
+    class=\"hljs-keyword\">if</span> (!started) {\n      <span class=\"hljs-keyword\">if</span> (<span
+    class=\"hljs-string\">\"\"</span> !== decodedValue.<span class=\"hljs-title function_\">trim</span>()) {\n        started = <span
+    class=\"hljs-literal\">true</span>;\n      }\n    }\n    <span
+    class=\"hljs-keyword\">if</span> (started) {\n      <span class=\"hljs-title function_\">onChunk</span>
+  ({decodedValue, done});\n    }\n  }\n}\n</pre>
+\n
+</body>
+\n
+</html>

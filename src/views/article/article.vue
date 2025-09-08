@@ -3,7 +3,7 @@
     <div class="filter-container">
       <el-form>
         <el-form-item>
-          <el-button type="primary" icon="plus" @click="showCreate" v-permission="'article:add'">添加
+          <el-button type="primary" icon="plus" @click="showCreate">添加
           </el-button>
         </el-form-item>
       </el-form>
@@ -13,13 +13,13 @@
       <el-table-column align="left" prop="title" label="文章标题" style="width: 60px;"></el-table-column>
       <el-table-column align="center" label="管理">
         <template slot-scope="scope">
-          <el-button type="primary" icon="edit" @click="openTab(scope.row.pkId, 'edit')" v-permission="'article:update'">
+          <el-button type="primary" icon="edit" @click="openTab(scope.row.pkId, 'edit')">
             修改
           </el-button>
-          <el-button type="primary" icon="edit" @click="openTab(scope.row.pkId, 'view')" v-permission="'article:update'">
+          <el-button type="primary" icon="edit" @click="openTab(scope.row.pkId, 'view')">
             查看
           </el-button>
-          <el-button type="primary" icon="edit" @click="removeArticle(scope.row.pkId)" v-permission="'article:update'">
+          <el-button type="primary" icon="edit" @click="removeArticle(scope.row.pkId)" v-if="hasPermission('article:remove') || scope.row.author === curUserId">
             删除
           </el-button>
         </template>
@@ -29,10 +29,13 @@
 </template>
 <script>
 
+import {hasPermission} from "@/utils/hasPermission";
+
 export default {
   data() {
     return {
       totalCount: 0, //分页组件--数据总条数
+      curUserId: this.$store.state.user.userId,
       list: [],//表格的数据
       listLoading: false,//数据加载等待动画
       listQuery: {
@@ -52,6 +55,7 @@ export default {
     }
   },
   created() {
+    console.log(this.curUserId, 'curUserId')
     this.getList();
     // 监听来自 edit.vue 的消息
     window.addEventListener('message', this.handleMessage);
@@ -61,14 +65,12 @@ export default {
     window.removeEventListener('message', this.handleMessage);
   },
   methods: {
+    hasPermission,
     viewContent(row) {
       this.openTab(row.pkId, 'view');
     },
     getList() {
       //查询列表
-      if (!this.hasPerm('article:list')) {
-        return
-      }
       this.listLoading = true;
       this.api({
         url: "/article/list",
@@ -97,7 +99,7 @@ export default {
         type: 'warning'
       }).then(() => {
         this.api({
-          url: "/article/deleteArticle",
+          url: "/article/delete",
           method: "post",
           data: {
             articleId: articleId
@@ -105,7 +107,7 @@ export default {
         }).then(data => {
           this.$message('文章删除成功');
           this.getList();
-        })
+        }).catch(error => {})
       })
     },
     handleMessage(event) {
