@@ -5,11 +5,21 @@
         <el-form-item>
           <el-button type="primary" icon="plus" v-permission="'user:add'" @click="showCreate">添加
           </el-button>
+          <el-button type="primary" icon="plus" v-permission="'user:remove'" @click="removeUser">删除
+          </el-button>
         </el-form-item>
       </el-form>
     </div>
-    <el-table :data="list" v-loading="listLoading" border fit
+    <el-table :data="list"
+              v-loading="listLoading"
+              ref="userTable"
+              border
+              fit
               highlight-current-row>
+      <el-table-column
+        type="selection"
+        width="55">
+      </el-table-column>
       <el-table-column align="center" label="序号" width="80">
         <template slot-scope="scope">
           <span v-text="getIndex(scope.$index)"> </span>
@@ -23,9 +33,9 @@
         <template slot-scope="scope">
           <el-button type="primary" icon="edit" @click="showUpdate(scope.$index)" v-permission="'user:update'">修改
           </el-button>
-          <el-button type="danger" icon="delete" v-if="scope.row.userId!==userId "
-                     @click="removeUser(scope.$index)" v-permission="'user:update'">删除
-          </el-button>
+<!--          <el-button type="danger" icon="delete" v-if="scope.row.userId!==userId "-->
+<!--                     @click="removeUser(scope.$index)" v-permission="'user:update'">删除-->
+<!--          </el-button>-->
         </template>
       </el-table-column>
     </el-table>
@@ -71,7 +81,7 @@
             :auto-upload="false"
             :show-file-list="false"
             :on-change="handleFileChange">
-            <img v-if="tempUserForm.avatarBase64" :src="tempUserForm.avatarBase64" class="avatar" />
+            <img v-if="tempUserForm.avatarBase64" :src="tempUserForm.avatarBase64" class="avatar"/>
             <i v-else class="el-icon-plus avatar-uploader-icon"></i>
           </el-upload>
           <div class="avatar-tip">支持JPG/PNG格式，大小不超过2MB</div>
@@ -242,19 +252,19 @@ export default {
 
       })
     },
-    removeUser($index) {
+    removeUser() {
       let _vue = this;
       this.$confirm('确定删除此用户?', '提示', {
         confirmButtonText: '确定',
         showCancelButton: false,
         type: 'warning'
       }).then(() => {
-        let user = _vue.list[$index];
-        user.deleteStatus = '2';
+        const selectedRows = this.$refs.userTable.selection;
+        const data = {userIds: selectedRows.map(item => item.pkId)};
         _vue.api({
-          url: "/user/updateUser",
+          url: "/user/remove",
           method: "post",
-          data: user
+          data: data
         }).then(() => {
           this.$message.success('删除成功')
           _vue.getList()
