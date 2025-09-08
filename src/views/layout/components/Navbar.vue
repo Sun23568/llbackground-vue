@@ -4,6 +4,7 @@
     <breadcrumb></breadcrumb>
     <el-dropdown class="avatar-container" trigger="click">
       <div class="avatar-wrapper">
+        <span class="user-name">{{ $store.state.user.userName }}</span>
         <img class="user-avatar" :src="img_avatar">
         <i class="el-icon-caret-bottom"></i>
       </div>
@@ -118,7 +119,7 @@ export default {
           userName: this.modifyInfoForm.userName,
           oldPassword: this.modifyInfoForm.oldPassword ? sm3(this.modifyInfoForm.oldPassword) : '',
           newPassword: this.modifyInfoForm.newPassword ? sm3(this.modifyInfoForm.newPassword) : '',
-          confirmPassword: this.modifyInfoForm.confirmPassword ? sm3(this.modifyInfoForm.confirmPassword): '',
+          confirmPassword: this.modifyInfoForm.confirmPassword ? sm3(this.modifyInfoForm.confirmPassword) : '',
           avatar: this.modifyInfoForm.avatar
         }
       }).then(() => {
@@ -238,6 +239,45 @@ export default {
 
   .el-form-item__content {
     margin-right: 20px;
+  }
+  .avatar-wrapper {
+    cursor: pointer;
+    margin-top: 5px;
+    position: relative;
+    display: flex; // 使用flex布局
+    align-items: center; // 垂直居中
+
+    .user-name {
+      margin-right: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #409EFF;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+
+      &:hover {
+        color: #67C23A;
+        text-shadow: 0 0 8px rgba(103, 194, 58, 0.5);
+        transform: scale(1.05);
+      }
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+
+    .el-icon-caret-bottom {
+      position: absolute;
+      right: -20px;
+      top: 25px;
+      font-size: 12px;
+    }
   }
 }
 </style>

@@ -24,11 +24,6 @@ import Quill from 'quill';
 import 'quill/dist/quill.core.css';
 import 'quill/dist/quill.snow.css';
 import 'quill/dist/quill.bubble.css';
-import QuillBetterTable from 'quill-better-table';
-
-Quill.register({
-  'modules/better-table': QuillBetterTable
-}, true)
 
 export default {
   name: "Editor",
@@ -58,29 +53,8 @@ export default {
         bounds: document.body,
         debug: "warn",
         modules: {
-          'better-table': {
-            operationMenu: {
-              items: {
-                unmergeCells: {
-                  text: 'Another unmerge cells name'
-                }
-              }
-            }
-          },
-          keyboard: {
-            bindings: QuillBetterTable.keyboardBindings
-          },
           syntax: {
-            highlight: (text) => {
-              try {
-                // 使用 highlightAuto 自动检测语言并进行高亮
-                const result = hljs.highlightAuto(text);
-                return result.value;
-              } catch (error) {
-                console.error('代码高亮错误:', error);
-                return text; // 如果出错，返回原始文本
-              }
-            }
+            hljs: hljs
           },
           toolbar: {
             container: [
@@ -89,7 +63,6 @@ export default {
               [{header: 1}, {header: 2}], // 标题，键值对的形式；1、2表示字体大小
               [{list: "ordered"}, {list: "bullet"}], //列表
               [{script: "sub"}, {script: "super"}], // 上下标
-              ['table'],
               [{indent: "-1"}, {indent: "+1"}], // 缩进
               [{direction: "rtl"}], // 文本方向
               [{'size': ['12px', '14px', '16px', '20px', '24px', '32px']}], // 字体大小
@@ -115,10 +88,6 @@ export default {
                   Quill.sources.USER
                 );
               },
-              table: function () {
-                // 插入一个 2行2列 的表格（可自定义行数/列数）
-                this.quill.getModule('better-table').insertTable(2, 2);
-              }
             }
           }
         },
@@ -160,7 +129,6 @@ export default {
         {Choice: '.ql-align .ql-picker-item[data-value="center"]', title: '居中对齐'},
         {Choice: '.ql-align .ql-picker-item[data-value="right"]', title: '居右对齐'},
         {Choice: '.ql-align .ql-picker-item[data-value="justify"]', title: '两端对齐'},
-        {Choice: '.ql-table', title: '添加表格'},
       ]
     }
   },
@@ -204,25 +172,11 @@ export default {
       this.quill.clipboard.dangerouslyPasteHTML(this.currentValue);
       this.quill.on("text-change", (delta, oldDelta, source) => {
         let html = this.$refs.editor.children[0].innerHTML;
-        if (html.indexOf('<table>') !== -1) {
-          //这里是特殊处理，因为是邮件模板，保存的html会丢失表格样式，需要在内容前面加上
-          let _class = "<head>"
-            + "<style>"
-            + "table {table-layout: fixed; width: 100%; border-collapse: collapse; }"
-            + "td, th { padding: 2px 5px; border: 1px solid #000; outline: none; display: table-cell; vertical-align: inherit; unicode-bidi: isolate;}"
-            + "img { max-width: 100%; height: auto; }"
-            + "</style>"
-            + "</head>";
-          html = _class + html;
-        }
         this.currentValue = html;
         const text = this.quill.getText();
         const quill = this.quill;
         this.$emit("input", html);
         this.$emit("on-change", {html, text, quill});
-      });
-      this.quill.on("text-change", (delta, oldDelta, source) => {
-        this.$emit("on-text-change", delta, oldDelta, source);
       });
       this.quill.on("selection-change", (range, oldRange, source) => {
         this.$emit("on-selection-change", range, oldRange, source);

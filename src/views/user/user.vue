@@ -5,7 +5,7 @@
         <el-form-item>
           <el-button type="primary" icon="plus" v-permission="'user:add'" @click="showCreate">添加
           </el-button>
-          <el-button type="primary" icon="plus" v-permission="'user:remove'" @click="removeUser">删除
+          <el-button type="primary" icon="plus" v-permission="'user:remove'" @click="removeUser(null)">删除
           </el-button>
         </el-form-item>
       </el-form>
@@ -33,9 +33,9 @@
         <template slot-scope="scope">
           <el-button type="primary" icon="edit" @click="showUpdate(scope.$index)" v-permission="'user:update'">修改
           </el-button>
-<!--          <el-button type="danger" icon="delete" v-if="scope.row.userId!==userId "-->
-<!--                     @click="removeUser(scope.$index)" v-permission="'user:update'">删除-->
-<!--          </el-button>-->
+          <el-button type="danger" icon="delete" v-if="scope.row.userId!==userId "
+                     @click="removeUser(scope.row)" v-permission="'user:remove'">删除
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -235,15 +235,22 @@ export default {
 
       })
     },
-    removeUser() {
+    removeUser(row) {
       let _vue = this;
       this.$confirm('确定删除此用户?', '提示', {
         confirmButtonText: '确定',
-        showCancelButton: false,
+        showCancelButton: true,
+        cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        const selectedRows = this.$refs.userTable.selection;
-        const data = {userIds: selectedRows.map(item => item.pkId)};
+        let data = {};
+        console.log(row, 'row')
+        if (row) {
+          data = {userIds: [row.pkId]};
+        } else {
+          const selectedRows = this.$refs.userTable.selection;
+          data = {userIds: selectedRows.map(item => item.pkId)};
+        }
         _vue.api({
           url: "/user/remove",
           method: "post",
@@ -252,8 +259,9 @@ export default {
           this.$message.success('删除成功')
           _vue.getList()
         }).catch(() => {
-          _vue.$message.error("删除失败")
         })
+      }).catch(() => {
+        this.$message.info('已取消删除')
       })
     },
     validConfirmPassword() {

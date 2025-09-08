@@ -73,7 +73,7 @@ const user = {
     LogOut({commit}) {
       return new Promise((resolve) => {
         api({
-          url: "login/logout", method: "post"
+          url: "/sa/logout", method: "post"
         }).then(data => {
           commit('RESET_USER')
           removeToken()
