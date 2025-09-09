@@ -55,7 +55,6 @@ export default {
     }
   },
   created() {
-    console.log(this.curUserId, 'curUserId')
     this.getList();
     // 监听来自 edit.vue 的消息
     window.addEventListener('message', this.handleMessage);

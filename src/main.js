@@ -13,7 +13,6 @@ import '@/icons' // icon
 import '@/permission' // 权限
 import {default as api} from './utils/api'
 import directives from "@/directives";
-import '@/styles/highlight.scss'
 import {hasPermission} from "./utils/hasPermission";
 
 // 显式引入图标组件

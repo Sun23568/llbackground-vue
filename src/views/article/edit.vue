@@ -140,8 +140,6 @@ export default {
 </script>
 
 <style scoped>
-@import 'highlight.js/styles/atom-one-dark.css';
-
 /deep/ .el-form-item__content {
   width: 100% !important;
 }

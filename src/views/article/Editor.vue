@@ -4,22 +4,17 @@
   </div>
 </template>
 <script>
-import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css'; // 确保导入了样式
+import hljs from 'highlight.js/lib/core';
+import 'highlight.js/styles/1c-light.css';
+window.hljs = hljs;
 
-import javascript from 'highlight.js/lib/languages/javascript';
-import java from 'highlight.js/lib/languages/java';
-import python from 'highlight.js/lib/languages/python';
+hljs.registerLanguage('javascript', require('highlight.js/lib/languages/javascript'));
+hljs.registerLanguage('java', require('highlight.js/lib/languages/java'));
+hljs.registerLanguage('python', require('highlight.js/lib/languages/python'));
+hljs.registerLanguage('vbscript-html', require('highlight.js/lib/languages/vbscript-html'));
+hljs.registerLanguage('xml', require('highlight.js/lib/languages/xml'));
+hljs.registerLanguage('css', require('highlight.js/lib/languages/css'));
 
-// 注册语言
-hljs.registerLanguage('javascript', javascript);
-hljs.registerLanguage('java', java);
-hljs.registerLanguage('python', python);
-
-// !!! 关键步骤：在导入 Quill 之前，将 hljs 挂载到全局 window 对象上
-window.hljs = hljs; // [!code ++]
-
-// 现在再导入 Quill 和相关模块
 import Quill from 'quill';
 import 'quill/dist/quill.core.css';
 import 'quill/dist/quill.snow.css';
@@ -54,7 +49,7 @@ export default {
         debug: "warn",
         modules: {
           syntax: {
-            hljs: hljs
+            highlight: text => hljs.highlightAuto(text).value
           },
           toolbar: {
             container: [
@@ -80,11 +75,10 @@ export default {
                 const range = quill.getSelection();
                 if (!range) return;
 
-                // 👇 用 Quill 的 formatText  API 给选中段落加缩进样式
                 quill.formatText(
                   range.index,
                   range.length,
-                  { 'text-indent': '2em' },
+                  {'text-indent': '2em'},
                   Quill.sources.USER
                 );
               },
@@ -199,8 +193,6 @@ export default {
 </script>
 
 <style lang="less" scoped>
-@import 'highlight.js/styles/atom-one-dark.css';
-
 ::v-deep {
   .ql-toolbar {
     /* 要与styles()方法中的width保持一致 */
