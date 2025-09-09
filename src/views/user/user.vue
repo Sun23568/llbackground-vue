@@ -244,7 +244,6 @@ export default {
         type: 'warning'
       }).then(() => {
         let data = {};
-        console.log(row, 'row')
         if (row) {
           data = {userIds: [row.pkId]};
         } else {

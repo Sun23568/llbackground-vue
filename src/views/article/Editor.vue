@@ -5,7 +5,8 @@
 </template>
 <script>
 import hljs from 'highlight.js/lib/core';
-import 'highlight.js/styles/1c-light.css';
+import 'highlight.js/styles/agate.css';
+
 window.hljs = hljs;
 
 hljs.registerLanguage('javascript', require('highlight.js/lib/languages/javascript'));
@@ -49,7 +50,10 @@ export default {
         debug: "warn",
         modules: {
           syntax: {
-            highlight: text => hljs.highlightAuto(text).value
+            highlight: text => {
+              const value = hljs.highlightAuto(text).value;
+              return value;
+            }
           },
           toolbar: {
             container: [
@@ -145,7 +149,17 @@ export default {
         if (val !== this.currentValue) {
           this.currentValue = (val === null || val === '<p><br></p>') ? "" : val;
           if (this.quill) {
-            this.quill.clipboard.dangerouslyPasteHTML(this.currentValue);
+            const html = this.currentValue;
+            const div = document.createElement('div');
+            div.innerHTML = html;
+            const preElements = div.querySelectorAll('pre.ql-syntax');
+            preElements.forEach((pre) => {
+              pre.textContent = pre.textContent;
+            });
+            const correctedHtml = div.innerHTML;
+
+            const delta = this.quill.clipboard.convert(correctedHtml);
+            this.quill.setContents(delta);
           }
         }
       },
@@ -160,10 +174,9 @@ export default {
   },
   methods: {
     init() {
-      // 初始化
       const editor = this.$refs.editor;
       this.quill = new Quill(editor, this.options);
-      this.quill.clipboard.dangerouslyPasteHTML(this.currentValue);
+
       this.quill.on("text-change", (delta, oldDelta, source) => {
         let html = this.$refs.editor.children[0].innerHTML;
         this.currentValue = html;
@@ -280,6 +293,10 @@ export default {
 
   .ql-snow .ql-picker.ql-size .ql-picker-label[data-value='32px']::before, .ql-snow .ql-picker.ql-size .ql-picker-item[data-value='32px']::before {
     content: '32px';
+  }
+
+  .ql-snow .ql-editor pre.ql-syntax {
+    background-color: #333;
   }
 }
 </style>

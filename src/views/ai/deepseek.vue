@@ -136,7 +136,6 @@ export default {
           this.response += decodedValue;
           this.chatList[this.chatList.length - 1].response = this.response;
           if (done) {
-            console.log('回答完成:done');
             this.m = false; // 取消加载状态
             this.isResponseComplete = true; // 设置回答完成状态
             // 新增: 清空提问框内容
