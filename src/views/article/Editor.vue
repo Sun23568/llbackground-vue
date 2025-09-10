@@ -21,6 +21,30 @@ import 'quill/dist/quill.core.css';
 import 'quill/dist/quill.snow.css';
 import 'quill/dist/quill.bubble.css';
 
+const Image = Quill.import('formats/image');
+class ElImgBlot extends Image {
+  static create(value) {
+    let node = super.create();
+    node.setAttribute('src', value.url || value);
+    if (value.alt) node.setAttribute('alt', value.alt);
+    if (value.width) node.setAttribute('width', value.width);
+    if (value.height) node.setAttribute('height', value.height);
+    return node;
+  }
+
+  static value(node) {
+    return {
+      url: node.getAttribute('src'),
+      alt: node.getAttribute('alt'),
+      width: node.getAttribute('width'),
+      height: node.getAttribute('height')
+    };
+  }
+}
+ElImgBlot.blotName = 'el-image';
+ElImgBlot.tagName = 'el-image';
+Quill.register(ElImgBlot);
+
 export default {
   name: "Editor",
   props: {
@@ -128,7 +152,8 @@ export default {
         {Choice: '.ql-align .ql-picker-item[data-value="center"]', title: '居中对齐'},
         {Choice: '.ql-align .ql-picker-item[data-value="right"]', title: '居右对齐'},
         {Choice: '.ql-align .ql-picker-item[data-value="justify"]', title: '两端对齐'},
-      ]
+      ],
+      getImageBasePath: '/article/image'
     }
   },
   computed: {
@@ -227,6 +252,9 @@ export default {
       };
     },
     async uploadImg(img) {
+      // 获取当前光标位置
+      const selection = this.quill.getSelection();
+
       const formData = new FormData();
       formData.append('file', img);
       const res = await this.api({
@@ -234,7 +262,26 @@ export default {
         method: 'post',
         data: formData
       }).catch(error => {
+        return Promise.reject(error);
       })
+
+      if (res) {
+        const baseURL = `${window.location.origin}${this.api.defaults.baseURL}`;
+        const fullPath = `${baseURL}${this.getImageBasePath}/${res}`;
+        // 如果有光标位置，则在光标处插入图片
+        if (selection) {
+          console.log(selection, 'selection')
+          this.quill.insertEmbed(selection.index, 'el-image', fullPath);
+          // 移动光标到图片后面
+          this.quill.setSelection(selection.index + 1);
+        } else {
+          // 如果没有光标位置，则在文档末尾插入
+          const length = this.quill.getLength();
+          this.quill.insertEmbed(length, 'el-image', fullPath);
+          this.quill.setSelection(length + 1);
+        }
+      }
+
       return res;
     },
   },
