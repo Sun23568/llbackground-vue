@@ -57,20 +57,20 @@ export default {
           },
           toolbar: {
             container: [
-              ["wordBox", "bold", "italic", "underline", "strike"], //加粗，斜体，下划线，删除线
-              ["blockquote", "code-block"], //引用，代码块
-              [{header: 1}, {header: 2}], // 标题，键值对的形式；1、2表示字体大小
-              [{list: "ordered"}, {list: "bullet"}], //列表
-              [{script: "sub"}, {script: "super"}], // 上下标
-              [{indent: "-1"}, {indent: "+1"}], // 缩进
-              [{direction: "rtl"}], // 文本方向
-              [{'size': ['12px', '14px', '16px', '20px', '24px', '32px']}], // 字体大小
-              [{header: [1, 2, 3, 4, 5, 6, false]}], //几级标题
-              [{color: []}, {background: []}], // 字体颜色，字体背景颜色
-              [{'font': ['SimSun', 'SimHei', 'Microsoft-YaHei', 'KaiTi', 'FangSong', 'Arial']}], //字体
-              [{align: []}], //对齐方式
-              ["clean"], //清除字体样式
-              ["link", "image"], //上传图片、上传视频
+              ["wordBox", "bold", "italic", "underline", "strike"],
+              ["blockquote", "code-block"],
+              [{header: 1}, {header: 2}],
+              [{list: "ordered"}, {list: "bullet"}],
+              [{script: "sub"}, {script: "super"}],
+              [{indent: "-1"}, {indent: "+1"}],
+              [{direction: "rtl"}],
+              [{'size': ['12px', '14px', '16px', '20px', '24px', '32px']}],
+              [{header: [1, 2, 3, 4, 5, 6, false]}],
+              [{color: []}, {background: []}],
+              [{'font': ['SimSun', 'SimHei', 'Microsoft-YaHei', 'KaiTi', 'FangSong', 'Arial']}],
+              [{align: []}],
+              ["clean"],
+              ["link", "image"],
             ],
             handlers: {
               //实现首行缩进的功能
@@ -86,6 +86,7 @@ export default {
                   Quill.sources.USER
                 );
               },
+              image: this.imageHandler,
             }
           }
         },
@@ -133,7 +134,7 @@ export default {
   computed: {
     styles() {
       // 设置宽高
-      let style = {width: '1200px'};
+      let style = {};
       if (this.minHeight) {
         style.minHeight = `${this.minHeight}px`;
       }
@@ -179,6 +180,7 @@ export default {
 
       this.quill.on("text-change", (delta, oldDelta, source) => {
         let html = this.$refs.editor.children[0].innerHTML;
+        console.log(html)
         this.currentValue = html;
         const text = this.quill.getText();
         const quill = this.quill;
@@ -201,19 +203,46 @@ export default {
         }
       });
     },
+    imageHandler() {
+      console.log('imageHandler')
+      let input = document.createElement('input');
+      input.setAttribute('type', 'file');
+      input.setAttribute('accept', 'image/png, image/webp');
+      input.click();
+      // 监听上传
+      input.onchange = async () => {
+        let file = input.files[0];
+        console.log(file, 'file')
+        if (file) {
+          if (/^image\//.test(file.type)) {
+            const response = await this.uploadImg(file);
+            console.log(response, 'response')
+          } else {
+            this.$message({
+              message: '只能上传图片',
+              type: 'warning'
+            });
+          }
+        }
+      };
+    },
+    async uploadImg(img) {
+      const formData = new FormData();
+      formData.append('file', img);
+      const res = await this.api({
+        url: '/article/upload/image',
+        method: 'post',
+        data: formData
+      }).catch(error => {
+      })
+      return res;
+    },
   },
 };
 </script>
 
 <style lang="less" scoped>
 ::v-deep {
-  .ql-toolbar {
-    /* 要与styles()方法中的width保持一致 */
-    width: 1200px;
-  }
-
-  /*设置字体和字体大小*/
-
   .ql-picker.ql-font .ql-picker-label[data-value=SimSun]::before, .ql-picker.ql-font .ql-picker-item[data-value=SimSun]::before {
     content: "宋体";
     font-family: "SimSun" !important;

@@ -1,8 +1,8 @@
 <template>
   <div class="editor-container">
     <navbar></navbar>
-    <div class="navbar-spacing"></div> <!-- 添加间距 -->
-    <div class="form-container"> <!-- 新增容器 -->
+    <div class="navbar-spacing"></div>
+    <div class="form-container">
       <el-form label-position="left">
         <div>
           <el-form-item label="标题:" class="form-item-class">
@@ -12,9 +12,8 @@
           <editor ref="editor" :value="content" v-model="content"/>
         </div>
       </el-form>
-    </div> <!-- 新增容器结束 -->
-    <div class="floating-bar"> <!-- 新增悬浮栏 -->
-      <span>字数: {{ wordCount }}</span>
+    </div>
+    <div class="floating-bar">
       <el-button type="text" @click="cancel">取消</el-button>
       <el-button type="primary" @click="submit('0')">提交</el-button>
     </div>
@@ -32,12 +31,6 @@ export default {
     return {
       title: '',
       content: '',
-      wordCount: 0,
-      quillEditor: null,
-      loadingImg: '/loading-img.svg',
-      loadingError: '/loading-error.svg',
-      autoSaveInterval: 5000, // 自动保存间隔时间（毫秒）
-      autoSaveTimer: null,
     }
   },
   mounted() {
@@ -45,54 +38,6 @@ export default {
     this.getArticle(articleId);
   },
   methods: {
-    handleImageUpload() {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/png, image/webp';
-      input.click();
-
-      input.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-          try {
-            // 上传图片axios
-            const response = await this.uploadImg(file);
-          } catch (error) {
-            console.error('图片上传失败', error);
-          }
-        }
-      };
-    },
-    async uploadImg(img) {
-      const formData = new FormData();
-      formData.append('file', img);
-      try {
-        const res = await this.api({
-          url: '/article/uploadFile',
-          method: 'post',
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          },
-          data: formData
-        });
-        return res;
-      } catch (err) {
-        console.error('Upload error:', err);
-        throw err; // 抛出错误，以便调用者可以处理
-      }
-    },
-    keywordHandler() {
-      // 阻止默认tab热键
-      document.addEventListener('keydown', (event) => {
-        if (event.key === 'Tab') {
-          event.preventDefault();
-        }
-      });
-    },
-    onTextChange() {
-      // 统计字数
-      this.wordCount = this.$refs.myQuillEditor.quill.getText().trim().length;
-    },
     cancel() {
       window.close();
     },
