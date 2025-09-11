@@ -21,29 +21,9 @@ import 'quill/dist/quill.core.css';
 import 'quill/dist/quill.snow.css';
 import 'quill/dist/quill.bubble.css';
 
-const Image = Quill.import('formats/image');
-class ElImgBlot extends Image {
-  static create(value) {
-    let node = super.create();
-    node.setAttribute('src', value.url || value);
-    if (value.alt) node.setAttribute('alt', value.alt);
-    if (value.width) node.setAttribute('width', value.width);
-    if (value.height) node.setAttribute('height', value.height);
-    return node;
-  }
-
-  static value(node) {
-    return {
-      url: node.getAttribute('src'),
-      alt: node.getAttribute('alt'),
-      width: node.getAttribute('width'),
-      height: node.getAttribute('height')
-    };
-  }
-}
-ElImgBlot.blotName = 'el-image';
-ElImgBlot.tagName = 'el-image';
-Quill.register(ElImgBlot);
+// 图片预览
+import Viewer from 'viewerjs';
+import 'viewerjs/dist/viewer.css';
 
 export default {
   name: "Editor",
@@ -227,6 +207,42 @@ export default {
           tip.setAttribute('title', item.title)
         }
       });
+      // 处理图片预览
+      this.previewImg(editor)
+    },
+    previewImg(editor) {
+      // 修改图片点击事件，触发 Viewer.js
+      editor.addEventListener('dblclick', (e) => {
+        console.log('dblclick', e.target);
+
+        this.viewer = new Viewer(e.target, {
+          inline: false,
+          movable: true,
+          zoomable: true,
+          rotatable: true,
+          scalable: true,
+          transition: true,
+          fullscreen: true,
+          keyboard: true,
+          toolbar: {
+            zoomIn: 4,
+            zoomOut: 4,
+            reset: 4,
+            play: {
+              show: 4,
+              size: 'large',
+            },
+            rotateLeft: 4,
+            rotateRight: 4,
+            flipHorizontal: 4,
+            flipVertical: 4,
+          }
+        });
+        if (e.target.tagName === 'IMG') {
+          e.preventDefault();
+          this.viewer.show();
+        }
+      });
     },
     imageHandler() {
       console.log('imageHandler')
@@ -271,13 +287,13 @@ export default {
         // 如果有光标位置，则在光标处插入图片
         if (selection) {
           console.log(selection, 'selection')
-          this.quill.insertEmbed(selection.index, 'el-image', fullPath);
+          this.quill.insertEmbed(selection.index, 'image', fullPath);
           // 移动光标到图片后面
           this.quill.setSelection(selection.index + 1);
         } else {
           // 如果没有光标位置，则在文档末尾插入
           const length = this.quill.getLength();
-          this.quill.insertEmbed(length, 'el-image', fullPath);
+          this.quill.insertEmbed(length, 'image', fullPath);
           this.quill.setSelection(length + 1);
         }
       }
