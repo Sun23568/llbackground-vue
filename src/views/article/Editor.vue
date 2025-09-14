@@ -20,7 +20,8 @@ import Quill from 'quill';
 import 'quill/dist/quill.core.css';
 import 'quill/dist/quill.snow.css';
 import 'quill/dist/quill.bubble.css';
-
+// 图片粘贴用
+const Delta = Quill.import('delta');
 // 图片预览
 import Viewer from 'viewerjs';
 import 'viewerjs/dist/viewer.css';
@@ -133,7 +134,7 @@ export default {
         {Choice: '.ql-align .ql-picker-item[data-value="right"]', title: '居右对齐'},
         {Choice: '.ql-align .ql-picker-item[data-value="justify"]', title: '两端对齐'},
       ],
-      getImageBasePath: '/article/image'
+      getImageBasePath: '/file/image'
     }
   },
   computed: {
@@ -182,6 +183,25 @@ export default {
     init() {
       const editor = this.$refs.editor;
       this.quill = new Quill(editor, this.options);
+      // 粘贴监听器
+      this.quill.getModule('clipboard').addMatcher(Node.ELEMENT_NODE, (node, delta) => {
+        // 光标位置
+        const selection = this.quill.getSelection(true);
+        if (node.tagName === 'IMG' && node.src.startsWith('data:image')) {
+          setTimeout(async () => {
+            const file = this.dataURLtoFile(node.src, 'pasted-image.png');
+            const res = await this.uploadImg(file);
+            if (res) {
+              // 更新图片路径
+              const fullPath = this.getFullImagePath(res);
+              this.quill.insertEmbed(selection.index, 'image', fullPath);
+              this.quill.setSelection(selection.index + 1);
+            }
+          }, 0);
+          return new Delta();
+        }
+        return delta;
+      });
 
       this.quill.on("text-change", (delta, oldDelta, source) => {
         let html = this.$refs.editor.children[0].innerHTML;
@@ -213,8 +233,6 @@ export default {
     previewImg(editor) {
       // 修改图片点击事件，触发 Viewer.js
       editor.addEventListener('dblclick', (e) => {
-        console.log('dblclick', e.target);
-
         this.viewer = new Viewer(e.target, {
           inline: false,
           movable: true,
@@ -245,7 +263,6 @@ export default {
       });
     },
     imageHandler() {
-      console.log('imageHandler')
       let input = document.createElement('input');
       input.setAttribute('type', 'file');
       input.setAttribute('accept', 'image/png, image/webp');
@@ -253,11 +270,9 @@ export default {
       // 监听上传
       input.onchange = async () => {
         let file = input.files[0];
-        console.log(file, 'file')
         if (file) {
           if (/^image\//.test(file.type)) {
             const response = await this.uploadImg(file);
-            console.log(response, 'response')
           } else {
             this.$message({
               message: '只能上传图片',
@@ -274,7 +289,7 @@ export default {
       const formData = new FormData();
       formData.append('file', img);
       const res = await this.api({
-        url: '/article/upload/image',
+        url: '/file/upload/image',
         method: 'post',
         data: formData
       }).catch(error => {
@@ -282,11 +297,9 @@ export default {
       })
 
       if (res) {
-        const baseURL = `${window.location.origin}${this.api.defaults.baseURL}`;
-        const fullPath = `${baseURL}${this.getImageBasePath}/${res}`;
+        const fullPath = this.getFullImagePath(res);
         // 如果有光标位置，则在光标处插入图片
         if (selection) {
-          console.log(selection, 'selection')
           this.quill.insertEmbed(selection.index, 'image', fullPath);
           // 移动光标到图片后面
           this.quill.setSelection(selection.index + 1);
@@ -299,6 +312,24 @@ export default {
       }
 
       return res;
+    },
+    // 将base64数据转换为文件对象
+    dataURLtoFile(dataurl, filename) {
+      let arr = dataurl.split(','),
+        mime = arr[0].match(/:(.*?);/)[1],
+        bstr = atob(arr[1]),
+        n = bstr.length,
+        u8arr = new Uint8Array(n);
+
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+
+      return new File([u8arr], filename, {type: mime});
+    },
+    getFullImagePath(imagePath) {
+      const baseURL = `${window.location.origin}${this.api.defaults.baseURL}`;
+      return `${baseURL}${this.getImageBasePath}/${imagePath}`;
     },
   },
 };
