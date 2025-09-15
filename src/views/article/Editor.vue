@@ -90,8 +90,7 @@ export default {
                   {'text-indent': '2em'},
                   Quill.sources.USER
                 );
-              },
-              image: this.imageHandler,
+              }
             }
           }
         },
@@ -183,25 +182,6 @@ export default {
     init() {
       const editor = this.$refs.editor;
       this.quill = new Quill(editor, this.options);
-      // 粘贴监听器
-      this.quill.getModule('clipboard').addMatcher(Node.ELEMENT_NODE, (node, delta) => {
-        // 光标位置
-        const selection = this.quill.getSelection(true);
-        if (node.tagName === 'IMG' && node.src.startsWith('data:image')) {
-          setTimeout(async () => {
-            const file = this.dataURLtoFile(node.src, 'pasted-image.png');
-            const res = await this.uploadImg(file);
-            if (res) {
-              // 更新图片路径
-              const fullPath = this.getFullImagePath(res);
-              this.quill.insertEmbed(selection.index, 'image', fullPath);
-              this.quill.setSelection(selection.index + 1);
-            }
-          }, 0);
-          return new Delta();
-        }
-        return delta;
-      });
 
       this.quill.on("text-change", (delta, oldDelta, source) => {
         let html = this.$refs.editor.children[0].innerHTML;
@@ -261,77 +241,8 @@ export default {
           this.viewer.show();
         }
       });
-    },
-    imageHandler() {
-      let input = document.createElement('input');
-      input.setAttribute('type', 'file');
-      input.setAttribute('accept', 'image/png, image/webp');
-      input.click();
-      // 监听上传
-      input.onchange = async () => {
-        let file = input.files[0];
-        if (file) {
-          if (/^image\//.test(file.type)) {
-            const response = await this.uploadImg(file);
-          } else {
-            this.$message({
-              message: '只能上传图片',
-              type: 'warning'
-            });
-          }
-        }
-      };
-    },
-    async uploadImg(img) {
-      // 获取当前光标位置
-      const selection = this.quill.getSelection();
-
-      const formData = new FormData();
-      formData.append('file', img);
-      const res = await this.api({
-        url: '/file/upload/image',
-        method: 'post',
-        data: formData
-      }).catch(error => {
-        return Promise.reject(error);
-      })
-
-      if (res) {
-        const fullPath = this.getFullImagePath(res);
-        // 如果有光标位置，则在光标处插入图片
-        if (selection) {
-          this.quill.insertEmbed(selection.index, 'image', fullPath);
-          // 移动光标到图片后面
-          this.quill.setSelection(selection.index + 1);
-        } else {
-          // 如果没有光标位置，则在文档末尾插入
-          const length = this.quill.getLength();
-          this.quill.insertEmbed(length, 'image', fullPath);
-          this.quill.setSelection(length + 1);
-        }
-      }
-
-      return res;
-    },
-    // 将base64数据转换为文件对象
-    dataURLtoFile(dataurl, filename) {
-      let arr = dataurl.split(','),
-        mime = arr[0].match(/:(.*?);/)[1],
-        bstr = atob(arr[1]),
-        n = bstr.length,
-        u8arr = new Uint8Array(n);
-
-      while (n--) {
-        u8arr[n] = bstr.charCodeAt(n);
-      }
-
-      return new File([u8arr], filename, {type: mime});
-    },
-    getFullImagePath(imagePath) {
-      const baseURL = `${window.location.origin}${this.api.defaults.baseURL}`;
-      return `${baseURL}${this.getImageBasePath}/${imagePath}`;
-    },
-  },
+    }
+  }
 };
 </script>
 
