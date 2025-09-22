@@ -11,6 +11,9 @@
     <el-table :data="list" v-loading="listLoading" border fit
               highlight-current-row @row-dblclick="viewContent">
       <el-table-column align="left" prop="title" label="文章标题" style="width: 60px;"></el-table-column>
+      <el-table-column align="left" prop="authorName" label="作者" style="width: 60px;"></el-table-column>
+      <el-table-column align="left" prop="createTime" label="创建时间" style="width: 60px;"></el-table-column>
+      <el-table-column align="left" prop="updateTime" label="修改时间" style="width: 60px;"></el-table-column>
       <el-table-column align="center" label="管理">
         <template slot-scope="scope">
           <el-button type="primary" icon="edit" @click="openTab(scope.row.pkId, 'edit')">
@@ -83,13 +86,12 @@ export default {
         this.listLoading = false;
       });
     },
-
     showCreate() {
       window.open(`/#/article/edit?mode=create`, '_blank');
     },
     openTab(articleId, mode) {
-      //打开新的 Tab 页
-      window.open(`/#/article/edit?id=${articleId}&mode=${mode}`, '_blank');
+      console.log(`/#/article/${mode}?id=${articleId}`);
+      window.open(`/#/article/${mode}?id=${articleId}`, '_blank');
     },
     removeArticle(articleId) {
       this.$confirm('此操作将永久删除该文章, 是否继续?', '提示', {

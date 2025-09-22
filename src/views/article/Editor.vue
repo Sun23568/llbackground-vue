@@ -20,11 +20,22 @@ import Quill from 'quill';
 import 'quill/dist/quill.core.css';
 import 'quill/dist/quill.snow.css';
 import 'quill/dist/quill.bubble.css';
+
 // 图片粘贴用
 const Delta = Quill.import('delta');
 // 图片预览
 import Viewer from 'viewerjs';
 import 'viewerjs/dist/viewer.css';
+
+// 注册字体大小格式
+const Size = Quill.import('attributors/style/size');
+Size.whitelist = ['12px', '14px', '16px', '20px', '24px', '32px'];
+Quill.register(Size, true);
+
+// 注册字体格式
+const Font = Quill.import('attributors/style/font');
+Font.whitelist = ['SimSun', 'SimHei', 'Microsoft-YaHei', 'KaiTi', 'FangSong', 'Arial'];
+Quill.register(Font, true);
 
 export default {
   name: "Editor",
@@ -55,10 +66,7 @@ export default {
         debug: "warn",
         modules: {
           syntax: {
-            highlight: text => {
-              const value = hljs.highlightAuto(text).value;
-              return value;
-            }
+            highlight: text => hljs.highlightAuto(text).value
           },
           toolbar: {
             container: [
@@ -162,10 +170,14 @@ export default {
             preElements.forEach((pre) => {
               pre.textContent = pre.textContent;
             });
-            const correctedHtml = div.innerHTML;
-
-            const delta = this.quill.clipboard.convert(correctedHtml);
+            let correctedHtml = div.innerHTML;
+            correctedHtml = correctedHtml.replace(/<p>\t/g, '<p>&nbsp;&nbsp;&nbsp;&nbsp;');
+            let delta = this.quill.clipboard.convert(correctedHtml);
+            // 处理 pre 标签前的换行
+            delta = this.removeNewlineBeforePre(delta);
             this.quill.setContents(delta);
+            // 清除历史记录，防止通过 Ctrl+Z 撤销初始内容
+            this.quill.history.clear();
           }
         }
       },
@@ -185,7 +197,7 @@ export default {
 
       this.quill.on("text-change", (delta, oldDelta, source) => {
         let html = this.$refs.editor.children[0].innerHTML;
-        console.log(html)
+        console.log('html', html)
         this.currentValue = html;
         const text = this.quill.getText();
         const quill = this.quill;
@@ -209,6 +221,31 @@ export default {
       });
       // 处理图片预览
       this.previewImg(editor)
+    },
+    removeNewlineBeforePre(delta) {
+      const ops = [...delta.ops];
+
+      for (let i = 0; i < ops.length - 1; i++) {
+        const currentOp = ops[i];
+        const nextOp = ops[i + 1];
+
+        // 检查当前操作是否以换行符结尾
+        if (currentOp.insert && typeof currentOp.insert === 'string' && (currentOp.insert.endsWith('\n') && !currentOp.attributes)) {
+          // 检查下一个操作是否是插入 pre 格式的文本
+          if (nextOp.attributes && (nextOp.attributes['code-block'] || nextOp.attributes['blockquote'])) {
+            // 如果当前操作只有换行符，则移除整个操作
+            if (currentOp.insert === '\n') {
+              ops.splice(i, 1);
+              i--; // 调整索引
+            }
+            // 如果当前操作包含内容和换行符，则只移除换行符
+            else if (currentOp.insert.length > 1) {
+              currentOp.insert = currentOp.insert.slice(0, -1);
+            }
+          }
+        }
+      }
+      return new Delta(ops);
     },
     previewImg(editor) {
       // 修改图片点击事件，触发 Viewer.js

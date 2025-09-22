@@ -42,6 +42,7 @@ export default {
       window.close();
     },
     submit(draft) {
+      console.log('this.content', this.content);
       this.api({
         url: '/article/update',
         method: 'post',
@@ -58,7 +59,7 @@ export default {
           type: 'success'
         });
         // 关闭当前tab页的逻辑
-        // window.close();
+        window.close();
         // 发送消息到 article.vue
         window.opener.postMessage('articleSaved', '*');
       }).catch(error => {
@@ -144,7 +145,8 @@ export default {
   align-items: center;
   justify-content: center; /* 居中内容 */
   width: 80%; /* 设置宽度以拉长 */
-  margin-top: 20px; /* 添加顶部间距 */
+  margin: 20px auto; /* 水平居中并添加上下间距 */
+  border-radius: 4px; /* 添加圆角使外观更美观 */
 }
 
 .floating-bar span {

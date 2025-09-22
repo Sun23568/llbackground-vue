@@ -15,6 +15,11 @@ export const constantRouterMap = [
     hidden: true
   },
   {
+    path: '/article/view',
+    component: () => import('../views/article/view.vue'),
+    hidden: true
+  },
+  {
     path: '/',
     component: Layout,
     redirect: '/dashboard',
