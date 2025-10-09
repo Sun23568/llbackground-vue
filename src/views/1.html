@@ -1,0 +1,113 @@
+<div class=\"ql-code-block-container\" spellcheck=\"false\"><select class=\"ql-ui\" contenteditable=\"false\">
+  <option value=\"plain\">Plain</option>
+  <option value=\"bash\">Bash</option>
+  <option value=\"cpp\">C++</option>
+  <option value=\"cs\">C#</option>
+  <option value=\"css\">CSS</option>
+  <option value=\"diff\">Diff</option>
+  <option value=\"xml\">HTML/XML</option>
+  <option value=\"java\">Java</option>
+  <option value=\"javascript\">JavaScript</option>
+  <option value=\"markdown\">Markdown</option>
+  <option value=\"php\">PHP</option>
+  <option value=\"python\">Python</option>
+  <option value=\"ruby\">Ruby</option>
+  <option value=\"sql\">SQL</option>
+</select>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">package</span>
+    com.llback.api.app.user.handler;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><br></div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">import</span>
+    com.llback.api.app.user.dto.req.RemoveUsersCmd;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">import</span>
+    com.llback.api.app.user.dto.req.UpdateCurUserCmd;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">import</span>
+    com.llback.common.types.EncryptedPassword;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">import</span>
+    com.llback.common.types.StringId;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">import</span>
+    com.llback.common.types.UserId;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">import</span>
+    com.llback.common.types.UserName;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">import</span>
+    com.llback.common.util.AssertUtil;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">import</span>
+    com.llback.core.user.eo.UserEo;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">import</span>
+    com.llback.core.user.repository.AvatarRepository;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">import</span>
+    com.llback.core.user.repository.UserRepository;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">import</span>
+    com.llback.frame.Handler;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">import</span>
+    com.llback.frame.HandlerAcl;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">import</span>
+    com.llback.frame.context.ReqContext;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">import</span>
+    org.apache.commons.lang3.StringUtils;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">import</span>
+    org.springframework.beans.factory.annotation.Autowired;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">import</span>
+    org.springframework.stereotype.Component;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">import</span>
+    org.springframework.transaction.annotation.Transactional;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">import</span>
+    org.springframework.util.CollectionUtils;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><br></div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-comment\">/**</span></div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-comment\"> * 删除用户处理器</span>
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-comment\"> */</span></div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-meta\">@Component</span></div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token
+                                                            hljs-meta\">@HandlerAcl(\"user:remove\")</span></div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">public</span> <span
+    class=\"ql-token hljs-keyword\">class</span> <span class=\"ql-token hljs-title\">RemoveUsersHandler</span> <span
+    class=\"ql-token hljs-keyword\">implements</span> <span class=\"ql-token hljs-title\">Handler</span>&lt;Void,
+    RemoveUsersCmd&gt; {
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-comment\">/**</span></div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-comment\"> * 用户仓库</span></div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-comment\"> */</span></div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-meta\">@Autowired</span></div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">private</span>
+    UserRepository userRepository;
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><br></div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-meta\">@Override</span></div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-meta\">@Transactional</span></div>
+  <div class=\"ql-code-block\" data-language=\"java\">&nbsp; <span class=\"ql-token hljs-keyword\">public</span> Void
+    <span class=\"ql-token hljs-title\">execute(RemoveUsersCmd req)</span> {
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\">&nbsp; &nbsp; &nbsp;AssertUtil.notEmptyList(req.getUserIds(),
+    <span class=\"ql-token hljs-string\">\"用户ID不能为空\"</span>);
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\">&nbsp; &nbsp; &nbsp;AssertUtil.assertTrue(userRepository.removeUsers(req.getUserIds()),
+    <span class=\"ql-token hljs-string\">\"删除用户失败\"</span>);
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\"><span class=\"ql-token hljs-keyword\">&nbsp; &nbsp; return</span>
+    Void.TYPE.cast(<span class=\"ql-token hljs-literal\">null</span>);
+  </div>
+  <div class=\"ql-code-block\" data-language=\"java\">&nbsp; &nbsp;}</div>
+  <div class=\"ql-code-block\" data-language=\"java\">}</div>
+  <div class=\"ql-code-block\" data-language=\"java\"><br></div>
+</div>

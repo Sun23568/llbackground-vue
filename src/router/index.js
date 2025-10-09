@@ -53,6 +53,22 @@ export const asyncRouterMap = [
     ]
   },
   {
+    path: '/ai',
+    component: Layout,
+    redirect: '/ai/girlAdventure',
+    name: 'AI模块',
+    meta: {title: 'AI模块', icon: 'tree'},
+    children: [
+      {
+        path: 'girlAdventure',
+        name: '小飞历险记',
+        component: _import('ai/girlAdventure'),
+        meta: {title: '少女历险记', icon: 'password'},
+        menu: 'deepseek'
+      }
+    ]
+  },
+  {
     path: '/user',
     component: Layout,
     redirect: '/user/',
@@ -72,13 +88,6 @@ export const asyncRouterMap = [
         component: _import('user/access'),
         meta: {title: '授权管理', icon: 'password'},
         menu: 'access'
-      },
-      {
-        path: 'deepseek',
-        name: '小飞历险记',
-        component: _import('ai/deepseek'),
-        meta: {title: '小飞历险记', icon: 'password'},
-        menu: 'deepseek'
       }
     ]
   }

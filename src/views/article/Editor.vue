@@ -140,8 +140,7 @@ export default {
         {Choice: '.ql-align .ql-picker-item[data-value="center"]', title: '居中对齐'},
         {Choice: '.ql-align .ql-picker-item[data-value="right"]', title: '居右对齐'},
         {Choice: '.ql-align .ql-picker-item[data-value="justify"]', title: '两端对齐'},
-      ],
-      getImageBasePath: '/file/image'
+      ]
     }
   },
   computed: {
@@ -197,7 +196,6 @@ export default {
 
       this.quill.on("text-change", (delta, oldDelta, source) => {
         let html = this.$refs.editor.children[0].innerHTML;
-        console.log('html', html)
         this.currentValue = html;
         const text = this.quill.getText();
         const quill = this.quill;
