@@ -24,7 +24,7 @@
       </el-table-column>
     </el-table>
     
-    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible" width="40%">
+    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible" width="40%" :append-to-body="true">
       <el-form :model="tempConfigForm" label-position="right" label-width="120px">
         <el-form-item label="菜单名" required>
           <el-input v-model="tempConfigForm.menuName" :disabled="dialogStatus==='update'"></el-input>

@@ -1,4 +1,9 @@
-//sidebar
-$menuBg:#304156;
-$subMenuBg:#1f2d3d;
-$menuHover:#001528;
+//sidebar - 现代优雅配色方案（深蓝紫渐变）
+$menuBg: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+$menuBgColor:#0f172a; // 用于非渐变场景
+$subMenuBg:#0c1220;
+$menuHover:rgba(148, 163, 184, 0.15);
+$menuActive:#06b6d4; // 青色高亮
+$menuActiveGlow:rgba(6, 182, 212, 0.3);
+$menuText:#cbd5e1;
+$menuActiveText:#ffffff;

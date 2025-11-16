@@ -10,12 +10,7 @@
 }
 
 //暂时性解决diolag 问题 https://github.com/ElemeFE/element/issues/2461
-.el-dialog {
-  transform: none;
-  left: 0;
-  position: relative;
-  margin: 0 auto;
-}
+// 对话框基础定位样式已合并到下方
 
 // 修复element-ui图标不显示问题
 @font-face {
@@ -69,68 +64,213 @@
     }
   }
 }
-//to reset element-ui default css
-.el-upload {
-  input[type="file"] {
-    display: none !important;
+
+// 头像上传样式
+.avatar-uploader {
+  .el-upload {
+    border: 1px dashed #d1d5db;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    background-color: #ffffff;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: #06b6d4;
+    }
+  }
+
+  .avatar-uploader-icon {
+    font-size: 28px;
+    color: #8c939d;
+    width: 148px;
+    height: 148px;
+    line-height: 148px;
+    text-align: center;
+    background-color: #fafafa;
+  }
+
+  .avatar {
+    width: 148px;
+    height: 148px;
+    display: block;
   }
 }
 
-.el-upload__input {
-  display: none;
+.avatar-tip {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 8px;
 }
 
-//暂时性解决diolag 问题 https://github.com/ElemeFE/element/issues/2461
+// 现代化 Element UI 组件样式
+.el-button {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.el-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+}
+
 .el-dialog {
+  // 基础定位样式（修复 Element UI 的 dialog 问题）
   transform: none;
   left: 0;
   position: relative;
   margin: 0 auto;
-}
+  z-index: 1; // 相对于 wrapper，确保在遮罩之上
+  pointer-events: auto; // 确保对话框可以交互
 
-[class^="el-icon-"], [class*=" el-icon-"] {
-  /* use !important to prevent issues with browser extensions that change fonts */
-  font-family: 'element-icons' !important;
-  speak: none;
-  font-style: normal;
-  font-weight: normal;
-  font-variant: normal;
-  text-transform: none;
-  line-height: 1;
-  vertical-align: baseline;
-  display: inline-block;
-  /* Better Font Rendering =========== */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+  // 现代化样式
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #ffffff; // 明确设置白色背景
 
-.el-icon-close:before {
-  content: "\E6DB" !important;
-}
+  .el-dialog__header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    color: #fff;
+    padding: 20px;
 
-.el-icon-close {
-  display: inline-block;
-  font-size: inherit;
-  font-weight: normal;
-  text-rendering: auto;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+    .el-dialog__title {
+      color: #fff;
+      font-weight: 600;
+    }
 
-.el-dialog__headerbtn {
-  background: transparent;
-  border: none;
-  font-size: 16px;
-  cursor: pointer;
-}
+    .el-dialog__headerbtn {
+      top: 20px;
+      right: 20px;
 
-//element ui upload
-.upload-container {
-  .el-upload {
-    width: 100%;
-    .el-upload-dragger {
-      width: 100%;
-      height: 200px;
+      .el-dialog__close {
+        color: #cbd5e1;
+        font-size: 20px;
+
+        &:hover {
+          color: #06b6d4;
+        }
+      }
     }
   }
+
+  .el-dialog__body {
+    background-color: #ffffff; // 明确设置 body 为白色背景
+    padding: 20px;
+  }
+
+  .el-dialog__footer {
+    background-color: #ffffff; // 明确设置 footer 为白色背景
+    padding: 10px 20px 20px;
+  }
+}
+
+.el-dropdown-menu {
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border: none;
+  padding: 8px 0;
+  z-index: 2050 !important; // 确保下拉菜单在其他内容之上
+
+  .el-dropdown-menu__item {
+    border-radius: 4px;
+    margin: 2px 8px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background-color: #ecfeff;
+      color: #06b6d4;
+    }
+  }
+}
+
+// 输入框样式优化
+.el-input__inner {
+  border-radius: 6px;
+  transition: all 0.3s ease;
+
+  &:focus {
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.1);
+  }
+}
+
+.el-textarea__inner {
+  border-radius: 6px;
+  transition: all 0.3s ease;
+
+  &:focus {
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.1);
+  }
+}
+
+// 对话框遮罩层样式
+.el-dialog__wrapper {
+  z-index: 2000 !important; // 确保对话框包装器在所有内容之上
+}
+
+// Element UI 的全局遮罩层（v-modal）
+.v-modal {
+  z-index: 1999 !important; // 遮罩层 z-index 低于对话框包装器
+  background-color: rgba(0, 0, 0, 0.5); // 半透明黑色遮罩
+  pointer-events: auto; // 允许点击遮罩关闭对话框
+}
+
+// 表单项样式优化（用于对话框中的表单）
+.el-form-item__label {
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.el-form-item__error {
+  color: #ef4444;
+}
+
+// 确保所有弹出层组件的 z-index 足够高
+.el-message-box__wrapper {
+  z-index: 2100 !important; // MessageBox 确认框
+}
+
+.el-message {
+  z-index: 3000 !important; // 消息提示
+}
+
+.el-notification {
+  z-index: 3000 !important; // 通知
+}
+
+.el-loading-mask {
+  z-index: 2500 !important; // 加载遮罩
+}
+
+.el-picker-panel {
+  z-index: 2050 !important; // 日期选择器面板
+}
+
+.el-select-dropdown {
+  z-index: 2050 !important; // 下拉选择框
+}
+
+.el-popover {
+  z-index: 2050 !important; // 弹出框
+}
+
+.el-tooltip__popper {
+  z-index: 2050 !important; // 工具提示
 }
