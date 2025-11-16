@@ -65,7 +65,7 @@ export default {
           },
           toolbar: false  // 禁用工具栏
         },
-        readOnly: true,  // 设置为只读模式
+        readOnly: 'true',  // 设置为只读模式
         placeholder: "",
       },
     }
@@ -122,9 +122,6 @@ export default {
     init() {
       const viewer = this.$refs.viewer;
       this.quill = new Quill(viewer, this.options);
-
-      // 禁用编辑功能
-      this.quill.disable();
 
       this.quill.on("text-change", (delta, oldDelta, source) => {
         let html = this.$refs.viewer.children[0].innerHTML;

@@ -5,7 +5,7 @@ import store from '../store'
 // 创建axios实例
 const service = axios.create({
   baseURL:  '/api', // api的base_url
-  timeout: 150000000                  // 请求超时时间
+  timeout: 150000000
 })
 // request拦截器
 service.interceptors.request.use(config => {

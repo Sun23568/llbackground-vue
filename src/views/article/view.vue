@@ -1,5 +1,5 @@
 <template>
-  <div class="viewer-container">
+  <div class="view-container">
     <navbar></navbar>
     <div class="navbar-spacing"></div>
     <div class="form-container">
@@ -67,11 +67,11 @@ export default {
   width: 46px;
 }
 
-.viewer-container .ql-container::after {
+.view-container .ql-container::after {
   content: none;
 }
 
-.viewer-container .ql-container.ql-snow {
+.view-container .ql-container.ql-snow {
   border: none;
 }
 

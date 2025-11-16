@@ -1,7 +1,7 @@
 <template>
   <el-upload action="" :auto-upload="false" :show-file-list="false" :on-change="handleUpload"
-    accept="image/jpeg,image/png">
-    <el-button type="primary">点击上传</el-button>
+    accept="image/jpeg,image/png" v-permission="'ai:backgroundUpload'">
+    <el-button type="primary">背景图片</el-button>
   </el-upload>
 </template>
 
@@ -57,6 +57,18 @@ export default {
           this.$message.error('上传失败');
           return false;
         });
+    },
+    async fetchAndSetBackground() {
+      console.log('fetchAndSetBackground');
+      await this.api({
+        url: '/ai/background?aiMenuId=' + this.aiMenuId,
+        method: 'get',
+      })
+        .then(response => {
+          this.$emit('background-updated', response);
+          return true;
+        })
+        .catch(() => { });
     }
   }
 };
