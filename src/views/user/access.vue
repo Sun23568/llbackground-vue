@@ -68,7 +68,7 @@
     </el-table>
 
     <!-- 修改权限弹窗 -->
-    <el-dialog title="修改用户权限" :visible.sync="updateUserAccessVisible" @close="updateUserAccessClose">
+    <el-dialog title="修改用户权限" :visible.sync="updateUserAccessVisible" @close="updateUserAccessClose" :append-to-body="true">
       <el-form
         class="small-space"
         :model="updateUserAccessForm"
@@ -132,7 +132,7 @@
     </el-dialog>
 
     <!-- 新增权限弹窗 -->
-    <el-dialog title="新增权限" :visible.sync="addPermVisible" @close="addPermClose">
+    <el-dialog title="新增权限" :visible.sync="addPermVisible" @close="addPermClose" :append-to-body="true">
       <el-form
         ref="addPermForm"
         class="small-space"
@@ -173,7 +173,7 @@
     </el-dialog>
 
     <!-- 新增菜单弹窗 -->
-    <el-dialog title="新增菜单" :visible.sync="addMenuVisible" @close="addMenuClose">
+    <el-dialog title="新增菜单" :visible.sync="addMenuVisible" @close="addMenuClose" :append-to-body="true">
       <el-form
         ref="addMenuForm"
         class="small-space"

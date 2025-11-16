@@ -48,7 +48,7 @@
       :page-sizes="[10, 20, 50, 100]"
       layout="total, sizes, prev, pager, next, jumper">
     </el-pagination>
-    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible" width="30%">
+    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible" width="30%" :append-to-body="true">
       <el-form class="small-space" :model="tempUserForm" label-position="left" label-width="80px">
         <el-form-item label="用户ID" required>
           <el-input type="text" v-model="tempUserForm.userId">

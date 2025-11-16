@@ -23,7 +23,7 @@
       </el-dropdown-menu>
     </el-dropdown>
 
-    <el-dialog title="修改信息" :visible.sync="dialogVisible" width="30%">
+    <el-dialog title="修改信息" :visible.sync="dialogVisible" width="30%" :append-to-body="true">
       <el-form ref="passwordForm" :model="modifyInfoForm" label-width="100px">
         <el-form-item label="用户名" required>
           <el-input v-model="modifyInfoForm.userName"></el-input>
@@ -189,15 +189,27 @@ export default {
 
 <style rel="stylesheet/scss" lang="scss" scoped>
 .navbar {
-  height: 50px;
-  line-height: 50px;
+  height: 60px;
+  line-height: 60px;
   border-radius: 0px !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 1000; // 确保导航栏在侧边栏之上
+  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+  overflow: hidden; // 防止内容溢出
 
   .hamburger-container {
-    line-height: 58px;
-    height: 50px;
+    line-height: 60px;
+    height: 60px;
     float: left;
-    padding: 0 10px;
+    padding: 0 15px;
+    cursor: pointer;
+    transition: all 0.3s;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.025);
+    }
   }
 
   .screenfull {
@@ -208,75 +220,74 @@ export default {
   }
 
   .avatar-container {
-    height: 50px;
+    height: 60px;
     display: inline-block;
     position: absolute;
     right: 35px;
+    top: 0;
 
     .avatar-wrapper {
       cursor: pointer;
-      margin-top: 5px;
       position: relative;
+      padding: 10px 12px;
+      border-radius: 20px;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      height: 60px;
+      box-sizing: border-box;
+
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+      }
 
       .user-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 2px solid #06b6d4;
+        box-shadow: 0 2px 8px rgba(6, 182, 212, 0.25);
+        transition: all 0.3s;
+
+        &:hover {
+          transform: scale(1.05);
+          box-shadow: 0 4px 12px rgba(6, 182, 212, 0.35);
+        }
       }
 
       .el-icon-caret-bottom {
         position: absolute;
-        right: -20px;
-        top: 25px;
+        right: -8px;
+        top: 50%;
+        transform: translateY(-50%);
         font-size: 12px;
+        color: #64748b;
       }
     }
   }
 
   .el-dialog__body {
     padding: 20px 20px 0;
+    background-color: #ffffff !important; // 确保对话框内容区域为白色
   }
 
   .el-form-item__content {
     margin-right: 20px;
   }
-  .avatar-wrapper {
+  .user-name {
+    margin-right: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+    transition: all 0.3s ease;
     cursor: pointer;
-    margin-top: 5px;
-    position: relative;
-    display: flex; // 使用flex布局
-    align-items: center; // 垂直居中
 
-    .user-name {
-      margin-right: 10px;
-      font-size: 14px;
-      font-weight: 600;
-      color: #409EFF;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100px;
-      transition: all 0.3s ease;
-      cursor: pointer;
-
-      &:hover {
-        color: #67C23A;
-        text-shadow: 0 0 8px rgba(103, 194, 58, 0.5);
-        transform: scale(1.05);
-      }
-    }
-
-    .user-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-    }
-
-    .el-icon-caret-bottom {
-      position: absolute;
-      right: -20px;
-      top: 25px;
-      font-size: 12px;
+    &:hover {
+      color: #06b6d4;
     }
   }
 }
