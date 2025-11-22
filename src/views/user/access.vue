@@ -93,62 +93,96 @@
     </el-table>
 
     <!-- 修改权限弹窗 -->
-    <el-dialog title="修改用户权限" :visible.sync="updateUserAccessVisible" @close="updateUserAccessClose" :append-to-body="true">
-      <el-form
-        class="small-space"
-        :model="updateUserAccessForm"
-        label-position="left"
-        label-width="100px"
-        style='width: 600px; margin-left:50px;'
-      >
-        <el-form-item label="用户">
-          <template>
-            <span>{{ this.updateUserAccessForm.userId }}({{ this.updateUserAccessForm.userName }})</span>
-          </template>
-        </el-form-item>
+    <el-dialog
+      title="修改用户权限"
+      :visible.sync="updateUserAccessVisible"
+      @close="updateUserAccessClose"
+      :append-to-body="true"
+      width="900px"
+      top="5vh"
+      class="access-dialog"
+    >
+      <div class="dialog-content">
+        <!-- 用户信息 -->
+        <div class="user-info-section">
+          <div class="info-label">用户</div>
+          <div class="info-value">
+            <span class="user-display-name">{{ this.updateUserAccessForm.userName }}</span>
+            <span class="user-display-id">({{ this.updateUserAccessForm.userId }})</span>
+          </div>
+        </div>
 
-        <el-form-item label="菜单" required>
-          <el-checkbox-group v-model="updateUserAccessForm.menuIds">
-            <el-checkbox
-              v-for="menu in allMenu"
-              :label="menu.menuId"
-              :key="menu.menuId"
+        <!-- 菜单选择 -->
+        <div class="menu-section">
+          <div class="section-header">
+            <span class="section-title">菜单权限</span>
+            <span class="section-count">已选 {{ updateUserAccessForm.menuIds.length }}/{{ allMenu.length }}</span>
+          </div>
+          <div class="menu-checkbox-group">
+            <el-checkbox-group v-model="updateUserAccessForm.menuIds">
+              <el-checkbox
+                v-for="menu in allMenu"
+                :label="menu.menuId"
+                :key="menu.menuId"
+                class="menu-checkbox-item"
+              >
+                {{ menu.menuName }}
+              </el-checkbox>
+            </el-checkbox-group>
+          </div>
+        </div>
+
+        <!-- 权限选择 -->
+        <div class="perm-section">
+          <div class="section-header">
+            <span class="section-title">功能权限</span>
+          </div>
+          <el-collapse v-model="activePermTypes" accordion>
+            <el-collapse-item
+              v-for="(permType, _index) in allPermission"
+              :key="permType.type"
+              :name="permType.type"
             >
-              <span>{{ menu.menuName }}</span>
-            </el-checkbox>
-          </el-checkbox-group>
-        </el-form-item>
-
-        <el-form-item label="权限" required>
-          <div v-for="(permType, _index) in allPermission" :key="permType.type">
-            <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
-              <span style="width: 100px; flex-shrink: 0;">
-                <el-button
-                  :type="isPermNone(permType.type) ? '' : (isPermAll(permType.type) ? 'success' : 'primary')"
-                  size="mini"
-                  style="width:80px;"
-                  @click="checkAll(permType.type)"
+              <template slot="title">
+                <div class="collapse-title">
+                  <span class="perm-type-name">{{ permType.type }}</span>
+                  <div class="collapse-title-actions" @click.stop>
+                    <el-tag
+                      size="small"
+                      :type="isPermNone(permType.type) ? 'info' : 'success'"
+                    >
+                      {{ getPermCount(permType.type) }}/{{ permType.perms.length }}
+                    </el-tag>
+                    <el-button
+                      :type="isPermNone(permType.type) ? '' : (isPermAll(permType.type) ? 'success' : 'primary')"
+                      size="mini"
+                      @click="checkAll(permType.type)"
+                    >
+                      {{ isPermAll(permType.type) ? '取消全选' : '全选' }}
+                    </el-button>
+                  </div>
+                </div>
+              </template>
+              <el-checkbox-group v-model="updateUserAccessForm.permissions" class="perm-checkbox-group">
+                <div
+                  v-for="perm in permType.perms"
+                  :key="perm.permId"
+                  class="perm-checkbox-card"
+                  :class="{ 'is-checked': updateUserAccessForm.permissions.includes(perm.permId) }"
                 >
-                  {{ permType.type }}
-                </el-button>
-              </span>
-              <div style="flex: 1; margin-left: 20px;">
-                <el-checkbox-group v-model="updateUserAccessForm.permissions">
                   <el-checkbox
-                    v-for="perm in permType.perms"
                     :label="perm.permId"
                     @change="checkRequired(perm, _index)"
-                    :key="perm.permId"
-                    style="margin-right: 15px; white-space: nowrap;"
+                    class="perm-checkbox-item"
                   >
-                    <span>{{ perm.permName }}</span>
+                    <span class="perm-checkbox-text">{{ perm.permName }}</span>
                   </el-checkbox>
-                </el-checkbox-group>
-              </div>
-            </div>
-          </div>
-        </el-form-item>
-      </el-form>
+                </div>
+              </el-checkbox-group>
+            </el-collapse-item>
+          </el-collapse>
+        </div>
+      </div>
 
       <div slot="footer" class="dialog-footer" v-loading="updateAccessButtonLoading">
         <el-button @click="updateUserAccessVisible = false">取 消</el-button>
@@ -241,6 +275,7 @@ export default {
       updateAccessButtonLoading: false, // 控制按钮遮罩
       addPermButtonLoading: false,
       addMenuButtonLoading: false,
+      activePermTypes: [], // 当前展开的权限类型折叠面板
       addPermForm: {
         permCode: '',
         permName: '',
@@ -395,6 +430,20 @@ export default {
       }
 
       return result;
+    },
+
+    getPermCount(permType) {
+      // 获取已选权限数量
+      let perms = this.permTypeMap[permType];
+      let count = 0;
+
+      for (let j = 0; j < perms.length; j++) {
+        if (this.updateUserAccessForm.permissions.indexOf(perms[j].permId) > -1) {
+          count++;
+        }
+      }
+
+      return count;
     },
 
     checkAll(permType) {
@@ -716,5 +765,222 @@ export default {
 
 .requiredPerm {
   color: #ff0e13;
+}
+
+/* 弹窗样式 */
+.access-dialog .dialog-content {
+  padding: 0 12px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* 用户信息区域 */
+.user-info-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 24px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  margin-bottom: 28px;
+  border: 1px solid #e5e7eb;
+}
+
+.info-label {
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 14px;
+  min-width: 60px;
+}
+
+.info-value {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.user-display-name {
+  font-weight: 600;
+  color: #111827;
+  font-size: 15px;
+}
+
+.user-display-id {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* 区块样式 */
+.menu-section,
+.perm-section {
+  margin-bottom: 28px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.section-count {
+  font-size: 13px;
+  color: #6b7280;
+  background-color: #f3f4f6;
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+/* 菜单复选框组 */
+.menu-checkbox-group {
+  background-color: #f9fafb;
+  padding: 20px 24px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+
+.menu-checkbox-item {
+  margin: 0 !important;
+  min-width: 150px;
+  flex: 0 0 auto;
+}
+
+/deep/ .menu-checkbox-item .el-checkbox__label {
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* 折叠面板样式 */
+/deep/ .el-collapse {
+  border: none;
+}
+
+/deep/ .el-collapse-item {
+  margin-bottom: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/deep/ .el-collapse-item__header {
+  background-color: #f9fafb;
+  border: none;
+  padding: 14px 20px;
+  font-weight: 500;
+  color: #111827;
+  height: auto;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+/deep/ .el-collapse-item__header:hover {
+  background-color: #f3f4f6;
+}
+
+/deep/ .el-collapse-item__wrap {
+  border: none;
+  background-color: #fff;
+}
+
+/deep/ .el-collapse-item__content {
+  padding: 20px 24px 24px;
+}
+
+.collapse-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding-right: 12px;
+}
+
+.perm-type-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.collapse-title-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 权限复选框组 */
+.perm-checkbox-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+/* 权限卡片 */
+.perm-checkbox-card {
+  background-color: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.perm-checkbox-card:hover {
+  border-color: #bfdbfe;
+  background-color: #f8fafc;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.08);
+}
+
+.perm-checkbox-card.is-checked {
+  background-color: #eff6ff;
+  border-color: #2563eb;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+}
+
+.perm-checkbox-card.is-checked:hover {
+  background-color: #dbeafe;
+  border-color: #1d4ed8;
+}
+
+.perm-checkbox-item {
+  margin: 0 !important;
+  width: 100%;
+}
+
+/deep/ .perm-checkbox-item .el-checkbox__input {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/deep/ .perm-checkbox-item .el-checkbox__label {
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+  padding-left: 0;
+  padding-right: 32px;
+  width: 100%;
+}
+
+.perm-checkbox-card.is-checked /deep/ .el-checkbox__label {
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.perm-checkbox-text {
+  display: block;
+  line-height: 1.4;
 }
 </style>
