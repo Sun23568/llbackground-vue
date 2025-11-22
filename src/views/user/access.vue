@@ -43,21 +43,37 @@
         </template>
       </el-table-column>
 
-      <el-table-column align="left" label="权限" min-width="350">
+      <el-table-column align="left" label="权限" min-width="280">
         <template slot-scope="scope">
-          <div class="permissions-container">
-            <div v-for="permType in scope.row.permTypes" :key="permType.type" class="perm-type-row">
-              <span class="perm-type-label">{{ permType.type }}：</span>
-              <div class="perm-tags">
-                <el-tag
-                  v-for="perm in permType.perms"
-                  :key="perm.permId"
-                  v-text="perm.permName"
-                  class="tag-item"
-                  type="success"
-                ></el-tag>
+          <div class="permissions-summary">
+            <el-popover
+              v-for="permType in scope.row.permTypes"
+              :key="permType.type"
+              placement="top"
+              width="350"
+              trigger="hover"
+            >
+              <div class="perm-detail-container">
+                <div class="perm-detail-title">{{ permType.type }}</div>
+                <div class="perm-detail-tags">
+                  <el-tag
+                    v-for="perm in permType.perms"
+                    :key="perm.permId"
+                    v-text="perm.permName"
+                    size="small"
+                    type="success"
+                    class="perm-detail-tag"
+                  ></el-tag>
+                </div>
               </div>
-            </div>
+              <el-tag
+                slot="reference"
+                class="perm-summary-tag"
+                type="info"
+              >
+                {{ permType.type }} ({{ permType.perms.length }})
+              </el-tag>
+            </el-popover>
           </div>
         </template>
       </el-table-column>
@@ -629,32 +645,45 @@ export default {
   margin: 0 !important;
 }
 
-/* 权限容器 */
-.permissions-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.perm-type-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.perm-type-label {
-  min-width: 80px;
-  font-weight: 500;
-  color: #4b5563;
-  flex-shrink: 0;
-  padding-top: 2px;
-}
-
-.perm-tags {
+/* 权限摘要 */
+.permissions-summary {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  flex: 1;
+}
+
+.perm-summary-tag {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.perm-summary-tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Popover 内权限详情 */
+.perm-detail-container {
+  padding: 4px 0;
+}
+
+.perm-detail-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.perm-detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.perm-detail-tag {
+  margin: 0 !important;
 }
 
 /* 操作按钮 */
