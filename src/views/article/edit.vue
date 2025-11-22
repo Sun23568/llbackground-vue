@@ -1,30 +1,26 @@
 <template>
   <div class="editor-container">
-    <navbar></navbar>
-    <div class="navbar-spacing"></div>
-    <div class="form-container">
-      <el-form label-position="left">
-        <div>
-          <el-form-item label="标题:" class="form-item-class">
-            <el-input type="text" id="title" v-model="title" placeholder="请输入文章标题" class="full-width-input"/>
-          </el-form-item>
-          <hr class="separator"/>
-          <editor ref="editor" :value="content" v-model="content"/>
-        </div>
-      </el-form>
+    <div class="editor-header">
+      <el-input
+        type="text"
+        v-model="title"
+        placeholder="请输入文章标题"
+        class="title-input"
+      />
+      <div class="header-actions">
+        <el-button class="cancel-btn" size="medium" @click="cancel">取消</el-button>
+        <el-button class="submit-btn" type="primary" size="medium" @click="submit('0')">保存</el-button>
+      </div>
     </div>
-    <div class="floating-bar">
-      <el-button type="text" @click="cancel">取消</el-button>
-      <el-button type="primary" @click="submit('0')">提交</el-button>
+    <div class="editor-content">
+      <editor ref="editor" :value="content" v-model="content"/>
     </div>
   </div>
 </template>
 <script>
-import Navbar from '@/views/layout/components/Navbar';
 import Editor from "./Editor";
 export default {
   components: {
-    Navbar,
     Editor
   },
   data() {
@@ -39,7 +35,7 @@ export default {
   },
   methods: {
     cancel() {
-      window.close();
+      this.$router.push('/system/article');
     },
     submit(draft) {
       console.log('this.content', this.content);
@@ -58,10 +54,8 @@ export default {
           message: '保存成功',
           type: 'success'
         });
-        // 关闭当前tab页的逻辑
-        window.close();
-        // 发送消息到 article.vue
-        window.opener.postMessage('articleSaved', '*');
+        // 返回文章列表页面
+        this.$router.push('/system/article');
       }).catch(error => {
       })
     },
@@ -86,70 +80,178 @@ export default {
 </script>
 
 <style scoped>
-/deep/ .el-form-item__content {
-  width: 100% !important;
-}
-
-/deep/ .el-form-item__label {
-  width: 46px;
-}
-
-.editor-container .ql-container::after {
-  content: none;
-}
-
-.editor-container .ql-container.ql-snow {
-  border: none;
-}
-
-.separator {
-  border: none;
-  border-top: 1px solid #ccc;
-  margin: 20px 0;
-}
-
-.el-form-item {
+.editor-container {
+  height: 100%;
   display: flex;
-  align-items: center;
-}
-
-.full-width-input .el-input__inner {
-  width: 100%;
-}
-
-/* 确保标签文本水平显示 */
-.el-form-item__label {
-  writing-mode: horizontal-tb !important;
-  display: inline-block;
-}
-
-.navbar-spacing {
-  height: 20px; /* 设置间距高度 */
-}
-
-.form-container { /* 新增样式 */
-  width: 80%;
-  margin: 0 auto;
-}
-
-.floating-bar { /* 修改悬浮栏样式 */
-  position: relative; /* 改为相对定位 */
-  bottom: auto; /* 移除固定定位的底部位置 */
-  left: auto; /* 移除固定定位的左侧位置 */
-  transform: none; /* 移除 transform 属性 */
+  flex-direction: column;
   background-color: #fff;
-  padding: 10px 20px; /* 增加padding以拉长 */
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center; /* 居中内容 */
-  width: 80%; /* 设置宽度以拉长 */
-  margin: 20px auto; /* 水平居中并添加上下间距 */
-  border-radius: 4px; /* 添加圆角使外观更美观 */
 }
 
-.floating-bar span {
+/* 编辑器顶部区域 */
+.editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.title-input {
+  flex: 1;
   margin-right: 20px;
+}
+
+.title-input /deep/ .el-input__inner {
+  border: none;
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  padding: 8px 0;
+  height: auto;
+  line-height: 1.4;
+}
+
+.title-input /deep/ .el-input__inner::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.title-input /deep/ .el-input__inner:focus {
+  border: none;
+  box-shadow: none;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.cancel-btn {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background-color: #e5e7eb;
+  color: #1f2937;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+}
+
+.submit-btn {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.submit-btn:hover {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+}
+
+/* 编辑器内容区域 */
+.editor-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+/* 编辑器样式优化 */
+/deep/ .ql-toolbar.ql-snow {
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #fafafa;
+  padding: 12px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+/deep/ .ql-container.ql-snow {
+  border: none;
+  min-height: calc(100vh - 200px);
+}
+
+/deep/ .ql-editor {
+  min-height: calc(100vh - 200px);
+  font-size: 16px;
+  line-height: 1.75;
+  color: #1f2937;
+  padding: 32px 48px;
+}
+
+/deep/ .ql-editor.ql-blank::before {
+  color: #9ca3af;
+  font-style: normal;
+  left: 48px;
+}
+
+/* 编辑器工具栏按钮样式 */
+/deep/ .ql-snow .ql-stroke {
+  stroke: #6b7280;
+}
+
+/deep/ .ql-snow .ql-fill {
+  fill: #6b7280;
+}
+
+/deep/ .ql-toolbar button:hover .ql-stroke,
+/deep/ .ql-toolbar button:hover .ql-fill {
+  stroke: #2563eb;
+  fill: #2563eb;
+}
+
+/deep/ .ql-toolbar button.ql-active .ql-stroke,
+/deep/ .ql-toolbar button.ql-active .ql-fill {
+  stroke: #2563eb;
+  fill: #2563eb;
+}
+
+/deep/ .ql-toolbar button:hover {
+  background-color: #e5e7eb;
+}
+
+/deep/ .ql-toolbar button.ql-active {
+  background-color: #dbeafe;
+}
+
+/deep/ .ql-editor p,
+/deep/ .ql-editor ol,
+/deep/ .ql-editor ul {
+  margin-bottom: 1em;
+}
+
+/deep/ .ql-editor h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+/deep/ .ql-editor h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+/deep/ .ql-editor h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
 }
 </style>

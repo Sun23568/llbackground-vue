@@ -10,16 +10,6 @@ export const constantRouterMap = [
   { path: '/login', component: _import('login/index'), hidden: true },
   { path: '/404', component: _import('404'), hidden: true },
   {
-    path: '/article/edit',
-    component: () => import('../views/article/edit.vue'),
-    hidden: true
-  },
-  {
-    path: '/article/view',
-    component: () => import('../views/article/view.vue'),
-    hidden: true
-  },
-  {
     path: '/',
     component: Layout,
     redirect: '/dashboard',
@@ -50,6 +40,20 @@ export const asyncRouterMap = [
         meta: { title: '文章', icon: 'example' },
         menu: 'article'
       },
+      {
+        path: 'article/edit',
+        name: '编辑文章',
+        component: _import('article/edit'),
+        meta: { title: '编辑文章' },
+        hidden: true
+      },
+      {
+        path: 'article/view',
+        name: '查看文章',
+        component: _import('article/view'),
+        meta: { title: '查看文章' },
+        hidden: true
+      }
     ]
   },
   {
