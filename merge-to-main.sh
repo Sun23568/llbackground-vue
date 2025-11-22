@@ -21,7 +21,7 @@ if ! command -v gh &> /dev/null; then
     exit 1
 fi
 
-echo -e "${BLUE}=== 前端分支合并工具 ===${NC}\n"
+echo -e "${BLUE}=== 后端分支合并工具 ===${NC}\n"
 
 # 获取当前分支名称
 CURRENT_BRANCH=$(git branch --show-current)
@@ -37,10 +37,11 @@ echo -e "${CYAN}当前分支: ${CURRENT_BRANCH}${NC}"
 MAIN_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
 if [ -z "$MAIN_BRANCH" ]; then
     # 如果无法自动检测，尝试常见的主分支名称
-    if git show-ref --verify --quiet refs/heads/main; then
-        MAIN_BRANCH="main"
-    elif git show-ref --verify --quiet refs/heads/master; then
+    if git show-ref --verify --quiet refs/heads/master; then
         MAIN_BRANCH="master"
+    elif git show-ref --verify --quiet refs/heads/main; then
+        MAIN_BRANCH="main"
+    el
     else
         echo -e "${RED}错误: 无法检测主分支名称${NC}"
         exit 1
@@ -135,21 +136,16 @@ PR_BODY="## 📝 更改概述
 
 本 PR 包含 ${COMMIT_COUNT} 个提交的更改。
 
-## 🎨 前端更改内容
+## 🔧 更改内容
 
 $(git log --format='- %s' "$MAIN_BRANCH".."$CURRENT_BRANCH" | head -10)
 
 ## ✅ 测试清单
 
-- [ ] 界面在不同浏览器中测试
-- [ ] 响应式布局正常
-- [ ] 无控制台错误
-- [ ] 组件交互正常
+- [ ] 代码已在本地测试
+- [ ] 单元测试已通过
 - [ ] 代码符合项目规范
-
-## 📱 UI/UX 更改
-
-<!-- 如有界面变化，请在此添加截图 -->
+- [ ] 已更新相关文档
 
 ## 📌 相关链接
 
