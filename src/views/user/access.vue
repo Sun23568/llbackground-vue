@@ -1,13 +1,17 @@
 <template>
-  <div class="app-container">
-    <el-button type="primary" @click="addPermVisible = true" v-permission="'access:addPerm'">新增权限</el-button>
-    <el-button type="primary" @click="addMenuVisible = true" v-permission="'access:addMenu'">新增菜单</el-button>
+  <div class="access-container">
+    <div class="page-header">
+      <h2 class="page-title">授权管理</h2>
+      <div class="header-actions">
+        <el-button type="primary" icon="el-icon-plus" @click="addPermVisible = true" v-permission="'access:addPerm'">新增权限</el-button>
+        <el-button type="success" icon="el-icon-plus" @click="addMenuVisible = true" v-permission="'access:addMenu'">新增菜单</el-button>
+      </div>
+    </div>
 
     <el-table
       :data="list"
       v-loading="listLoading"
-      border
-      fit
+      class="access-table"
       highlight-current-row
     >
       <el-table-column align="center" label="序号" width="80">
@@ -16,52 +20,57 @@
         </template>
       </el-table-column>
 
-      <el-table-column align="center" label="用户" prop="user" width="150">
+      <el-table-column align="left" label="用户" prop="user" min-width="160">
         <template slot-scope="scope">
-          <span>{{ scope.row.userName }}({{ scope.row.userId }})</span>
+          <div class="user-info">
+            <span class="user-name">{{ scope.row.userName }}</span>
+            <span class="user-id">({{ scope.row.userId }})</span>
+          </div>
         </template>
       </el-table-column>
 
-      <el-table-column align="center" label="菜单" width="420">
+      <el-table-column align="left" label="菜单" min-width="280">
         <template slot-scope="scope">
-          <el-tag
-            v-for="menu in scope.row.menus"
-            :key="menu.menuId"
-            v-text="menu.menuName"
-            style="margin-right: 3px;"
-            type="primary"
-          ></el-tag>
+          <div class="tags-container">
+            <el-tag
+              v-for="menu in scope.row.menus"
+              :key="menu.menuId"
+              v-text="menu.menuName"
+              class="tag-item"
+              type="primary"
+            ></el-tag>
+          </div>
         </template>
       </el-table-column>
 
-      <el-table-column align="center" label="权限" width="420">
+      <el-table-column align="left" label="权限" min-width="350">
         <template slot-scope="scope">
-          <div>
-            <div v-for="permType in scope.row.permTypes" style="text-align: left">
-              <span style="width: 100px;display: inline-block;text-align: right">
-                {{ permType.type }}：
-              </span>
-              <el-tag
-                v-for="perm in permType.perms"
-                :key="perm.permId"
-                v-text="perm.permName"
-                style="margin-right: 3px;"
-                type="primary"
-              ></el-tag>
+          <div class="permissions-container">
+            <div v-for="permType in scope.row.permTypes" :key="permType.type" class="perm-type-row">
+              <span class="perm-type-label">{{ permType.type }}：</span>
+              <div class="perm-tags">
+                <el-tag
+                  v-for="perm in permType.perms"
+                  :key="perm.permId"
+                  v-text="perm.permName"
+                  class="tag-item"
+                  type="success"
+                ></el-tag>
+              </div>
             </div>
           </div>
         </template>
       </el-table-column>
 
-      <el-table-column align="center" label="管理">
+      <el-table-column align="center" label="操作" width="120" fixed="right">
         <template slot-scope="scope">
           <el-button
-            type="primary"
-            icon="edit"
+            class="action-btn edit-btn"
+            size="mini"
             @click="updateAccess(scope.$index)"
             v-permission="'access:update'"
           >
-            修改
+            <i class="el-icon-edit"></i> 修改
           </el-button>
         </template>
       </el-table-column>
@@ -520,6 +529,162 @@ export default {
 </script>
 
 <style scoped>
+.access-container {
+  padding: 24px;
+  background-color: #fafafa;
+  min-height: 100%;
+}
+
+/* 页面头部 */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  margin-bottom: 20px;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* 表格样式 */
+.access-table {
+  background-color: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/deep/ .access-table::before {
+  display: none;
+}
+
+/deep/ .access-table th {
+  background-color: #fafafa !important;
+  color: #374151 !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 16px 0 !important;
+  border-bottom: 2px solid #e5e7eb !important;
+}
+
+/deep/ .access-table td {
+  padding: 16px 0 !important;
+  color: #1f2937 !important;
+  font-size: 14px !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+}
+
+/deep/ .access-table .el-table__row {
+  transition: all 0.2s ease;
+}
+
+/deep/ .access-table .el-table__row:hover {
+  background-color: #f9fafb !important;
+}
+
+/deep/ .access-table .el-table__row:last-child td {
+  border-bottom: none !important;
+}
+
+/* 用户信息 */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.user-name {
+  font-weight: 500;
+  color: #111827;
+}
+
+.user-id {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+/* 标签容器 */
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-item {
+  margin: 0 !important;
+}
+
+/* 权限容器 */
+.permissions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.perm-type-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.perm-type-label {
+  min-width: 80px;
+  font-weight: 500;
+  color: #4b5563;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.perm-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+/* 操作按钮 */
+.action-btn {
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.action-btn i {
+  margin-right: 4px;
+  font-size: 13px;
+}
+
+.edit-btn {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border-color: #dbeafe;
+}
+
+.edit-btn:hover {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+  transform: translateY(-1px);
+}
+
 .requiredPerm {
   color: #ff0e13;
 }
