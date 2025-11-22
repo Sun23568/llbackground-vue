@@ -3,6 +3,7 @@
 @use './transition.scss';
 @use './element-ui.scss';
 @use './sidebar.scss';
+@use './claude-theme.scss';
 @import '~element-ui/lib/theme-chalk/icon.css';
 
 body {
@@ -50,27 +51,18 @@ a:hover {
   }
 }
 
-//main-container全局样式
+//main-container全局样式 - Claude 风格
 .app-main{
-  min-height: 100%;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e2e8f0 100%);
-  padding: 20px;
+  min-height: calc(100vh - 60px);
+  background: #fafafa;
+  padding: 0;
   transition: all 0.3s ease;
   position: relative;
-  // 移除 z-index，避免与导航栏冲突
+  overflow-y: auto;
 }
 
 .app-container {
   padding: 24px;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-  margin-bottom: 20px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(226, 232, 240, 0.6);
-
-  &:hover {
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-    transform: translateY(-2px);
-  }
+  background: transparent;
+  min-height: 100%;
 }

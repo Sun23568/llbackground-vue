@@ -3,9 +3,9 @@
     <div class="filter-container">
       <el-form>
         <el-form-item>
-          <el-button type="primary" icon="plus" v-permission="'user:add'" @click="showCreate">添加
+          <el-button type="primary" icon="el-icon-plus" v-permission="'user:add'" @click="showCreate">添加用户
           </el-button>
-          <el-button type="primary" icon="plus" v-permission="'user:remove'" @click="removeUser(null)">删除
+          <el-button type="danger" icon="el-icon-delete" v-permission="'user:remove'" @click="removeUser(null)">批量删除
           </el-button>
         </el-form-item>
       </el-form>
@@ -13,8 +13,7 @@
     <el-table :data="list"
               v-loading="listLoading"
               ref="userTable"
-              border
-              fit
+              class="claude-table"
               highlight-current-row>
       <el-table-column
         type="selection"
@@ -25,16 +24,18 @@
           <span v-text="getIndex(scope.$index)"> </span>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="用户ID" prop="userId" style="width: 20px;"></el-table-column>
-      <el-table-column align="center" label="用户名" prop="userName" style="width: 20px;"></el-table-column>
-      <el-table-column align="center" label="创建时间" prop="createTime" width="170"></el-table-column>
-      <el-table-column align="center" label="最近修改时间" prop="updateTime" width="170"></el-table-column>
-      <el-table-column align="center" label="管理" width="220">
+      <el-table-column align="left" label="用户ID" prop="userId" min-width="150"></el-table-column>
+      <el-table-column align="left" label="用户名" prop="userName" min-width="150"></el-table-column>
+      <el-table-column align="left" label="创建时间" prop="createTime" width="180"></el-table-column>
+      <el-table-column align="left" label="最近修改时间" prop="updateTime" width="180"></el-table-column>
+      <el-table-column align="right" label="操作" width="240" fixed="right">
         <template slot-scope="scope">
-          <el-button type="primary" icon="edit" @click="showUpdate(scope.$index)" v-permission="'user:update'">修改
+          <el-button class="action-btn edit-btn" size="mini" @click="showUpdate(scope.$index)" v-permission="'user:update'">
+            <i class="el-icon-edit"></i> 编辑
           </el-button>
-          <el-button type="danger" icon="delete" v-if="scope.row.userId!==userId "
-                     @click="removeUser(scope.row)" v-permission="'user:remove'">删除
+          <el-button class="action-btn delete-btn" size="mini" v-if="scope.row.userId!==userId "
+                     @click="removeUser(scope.row)" v-permission="'user:remove'">
+            <i class="el-icon-delete"></i> 删除
           </el-button>
         </template>
       </el-table-column>
@@ -270,6 +271,10 @@ export default {
   }
 }
 </script>
+<style scoped>
+/* 使用全局 Claude 主题样式 */
+</style>
+
 <style>
 .dialog-footer {
   text-align: center !important;
