@@ -104,19 +104,347 @@
   margin-top: 8px;
 }
 
-// 现代化 Element UI 组件样式
+// ========== 现代化按钮样式 ==========
 .el-button {
   border-radius: 6px;
   font-weight: 500;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 8px 16px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  position: relative;
 
   &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: scale(1.02);
   }
 
   &:active {
-    transform: translateY(0);
+    transform: scale(0.98);
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  // Primary 按钮 - 现代青色
+  &--primary {
+    background: #06b6d4;
+    color: #ffffff;
+    border-color: #06b6d4;
+
+    &:hover {
+      background: #0891b2;
+      border-color: #0891b2;
+    }
+
+    &:active {
+      background: #0e7490;
+      border-color: #0e7490;
+    }
+
+    &.is-disabled,
+    &.is-disabled:hover {
+      background: #e2e8f0;
+      border-color: #e2e8f0;
+      color: #94a3b8;
+      cursor: not-allowed;
+      transform: none;
+    }
+  }
+
+  // Success 按钮 - 现代绿色
+  &--success {
+    background: #10b981;
+    color: #ffffff;
+    border-color: #10b981;
+
+    &:hover {
+      background: #059669;
+      border-color: #059669;
+    }
+
+    &:active {
+      background: #047857;
+      border-color: #047857;
+    }
+
+    &.is-disabled,
+    &.is-disabled:hover {
+      background: #e2e8f0;
+      border-color: #e2e8f0;
+      color: #94a3b8;
+      cursor: not-allowed;
+      transform: none;
+    }
+  }
+
+  // Warning 按钮 - 现代橙色
+  &--warning {
+    background: #f59e0b;
+    color: #ffffff;
+    border-color: #f59e0b;
+
+    &:hover {
+      background: #d97706;
+      border-color: #d97706;
+    }
+
+    &:active {
+      background: #b45309;
+      border-color: #b45309;
+    }
+
+    &.is-disabled,
+    &.is-disabled:hover {
+      background: #e2e8f0;
+      border-color: #e2e8f0;
+      color: #94a3b8;
+      cursor: not-allowed;
+      transform: none;
+    }
+  }
+
+  // Danger 按钮 - 现代红色
+  &--danger {
+    background: #ef4444;
+    color: #ffffff;
+    border-color: #ef4444;
+
+    &:hover {
+      background: #dc2626;
+      border-color: #dc2626;
+    }
+
+    &:active {
+      background: #b91c1c;
+      border-color: #b91c1c;
+    }
+
+    &.is-disabled,
+    &.is-disabled:hover {
+      background: #e2e8f0;
+      border-color: #e2e8f0;
+      color: #94a3b8;
+      cursor: not-allowed;
+      transform: none;
+    }
+  }
+
+  // Info 按钮 - 现代灰色
+  &--info {
+    background: #64748b;
+    color: #ffffff;
+    border-color: #64748b;
+
+    &:hover {
+      background: #475569;
+      border-color: #475569;
+    }
+
+    &:active {
+      background: #334155;
+      border-color: #334155;
+    }
+
+    &.is-disabled,
+    &.is-disabled:hover {
+      background: #e2e8f0;
+      border-color: #e2e8f0;
+      color: #94a3b8;
+      cursor: not-allowed;
+      transform: none;
+    }
+  }
+
+  // Default 按钮 - 简洁白色
+  &--default {
+    background: #ffffff;
+    color: #1e293b;
+    border-color: #e2e8f0;
+
+    &:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      color: #06b6d4;
+    }
+
+    &:active {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    &.is-disabled,
+    &.is-disabled:hover {
+      background: #fafafa;
+      color: #cbd5e1;
+      border-color: #e5e7eb;
+      cursor: not-allowed;
+      transform: none;
+    }
+  }
+
+  // 文字按钮
+  &--text {
+    background: transparent;
+    border: none;
+    color: #06b6d4;
+    padding: 8px 12px;
+
+    &:hover {
+      background: #f0f9ff;
+      color: #0891b2;
+      transform: none;
+    }
+
+    &:active {
+      background: #e0f2fe;
+      color: #0e7490;
+    }
+
+    &.is-disabled,
+    &.is-disabled:hover {
+      background: transparent;
+      color: #cbd5e1;
+      cursor: not-allowed;
+    }
+  }
+
+  // 朴素按钮 - 轻量设计
+  &.is-plain {
+    background: transparent;
+
+    &.el-button--primary {
+      color: #06b6d4;
+      border-color: #06b6d4;
+
+      &:hover {
+        background: #ecfeff;
+        color: #0891b2;
+        border-color: #0891b2;
+      }
+
+      &:active {
+        background: #cffafe;
+      }
+    }
+
+    &.el-button--success {
+      color: #10b981;
+      border-color: #10b981;
+
+      &:hover {
+        background: #d1fae5;
+        color: #059669;
+        border-color: #059669;
+      }
+    }
+
+    &.el-button--warning {
+      color: #f59e0b;
+      border-color: #f59e0b;
+
+      &:hover {
+        background: #fef3c7;
+        color: #d97706;
+        border-color: #d97706;
+      }
+    }
+
+    &.el-button--danger {
+      color: #ef4444;
+      border-color: #ef4444;
+
+      &:hover {
+        background: #fee2e2;
+        color: #dc2626;
+        border-color: #dc2626;
+      }
+    }
+
+    &.el-button--info {
+      color: #64748b;
+      border-color: #64748b;
+
+      &:hover {
+        background: #f1f5f9;
+        color: #475569;
+        border-color: #475569;
+      }
+    }
+  }
+
+  // 圆形按钮
+  &.is-circle {
+    border-radius: 50%;
+    padding: 10px;
+  }
+
+  // 圆角按钮
+  &.is-round {
+    border-radius: 20px;
+    padding: 8px 16px;
+  }
+
+  // 按钮尺寸
+  &--medium {
+    padding: 8px 15px;
+    font-size: 14px;
+  }
+
+  &--small {
+    padding: 6px 12px;
+    font-size: 13px;
+    border-radius: 4px;
+  }
+
+  &--mini {
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 4px;
+  }
+
+  // 图标按钮
+  & [class*="el-icon-"] + span {
+    margin-left: 5px;
+  }
+
+  // 加载状态
+  &.is-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+  }
+}
+
+// 按钮组
+.el-button-group {
+  display: inline-flex;
+  border-radius: 6px;
+  overflow: hidden;
+
+  .el-button {
+    border-radius: 0;
+    margin: 0;
+
+    &:first-child {
+      border-radius: 6px 0 0 6px;
+    }
+
+    &:last-child {
+      border-radius: 0 6px 6px 0;
+    }
+
+    &:only-child {
+      border-radius: 6px;
+    }
+
+    &:not(:last-child) {
+      border-right: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    &:hover {
+      z-index: 1;
+    }
   }
 }
 
@@ -273,4 +601,335 @@
 
 .el-tooltip__popper {
   z-index: 2050 !important; // 工具提示
+}
+
+// ========== 现代化表格样式 ==========
+.el-table {
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #ffffff;
+  border: 1px solid #f1f5f9;
+
+  // 表头样式 - 简洁现代
+  thead {
+    th {
+      background: #fafbfc !important;
+      color: #475569 !important;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 12px 0;
+      border-bottom: 2px solid #e2e8f0 !important;
+
+      .cell {
+        color: #475569;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      // 排序图标
+      .caret-wrapper {
+        .sort-caret {
+          border-color: #cbd5e1 transparent transparent;
+
+          &.ascending {
+            border-bottom-color: #06b6d4;
+          }
+
+          &.descending {
+            border-top-color: #06b6d4;
+          }
+        }
+      }
+    }
+
+    // 表头悬停
+    th:hover {
+      background: #f1f5f9 !important;
+    }
+  }
+
+  // 表格主体 - 简洁清晰
+  tbody {
+    tr {
+      transition: all 0.2s ease;
+
+      td {
+        padding: 12px 0;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+        font-size: 14px;
+
+        .cell {
+          color: #334155;
+        }
+      }
+
+      // 悬停效果 - 轻量
+      &:hover {
+        background-color: #f8fafc !important;
+
+        td {
+          color: #1e293b;
+
+          .cell {
+            color: #1e293b;
+          }
+        }
+      }
+
+      // 选中行
+      &.current-row {
+        background-color: #f0f9ff !important;
+
+        td {
+          color: #0891b2;
+        }
+      }
+    }
+
+    // 条纹样式
+    tr.el-table__row--striped {
+      background-color: #fafbfc;
+
+      &:hover {
+        background-color: #f8fafc !important;
+      }
+    }
+  }
+
+  // 固定列阴影
+  &::before {
+    background-color: transparent;
+  }
+
+  &::after {
+    background-color: transparent;
+  }
+
+  .el-table__fixed,
+  .el-table__fixed-right {
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.06);
+  }
+
+  // 空数据
+  .el-table__empty-block {
+    background-color: transparent;
+    padding: 40px 20px;
+
+    .el-table__empty-text {
+      color: #94a3b8;
+      font-size: 14px;
+    }
+  }
+
+  // 选择框
+  .el-checkbox__inner {
+    border-radius: 3px;
+    border-color: #cbd5e1;
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: #06b6d4;
+    }
+  }
+
+  .el-checkbox__input.is-checked {
+    .el-checkbox__inner {
+      background-color: #06b6d4;
+      border-color: #06b6d4;
+    }
+  }
+
+  .el-checkbox__input.is-indeterminate {
+    .el-checkbox__inner {
+      background-color: #06b6d4;
+      border-color: #06b6d4;
+    }
+  }
+}
+
+// 带边框的表格
+.el-table--border {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+
+  &::after,
+  th,
+  td {
+    border-color: #f1f5f9;
+  }
+
+  th {
+    border-right: 1px solid #e2e8f0;
+
+    &:last-child {
+      border-right: none;
+    }
+  }
+}
+
+// 表格组边框
+.el-table--group {
+  border: 1px solid #e2e8f0;
+}
+
+// 表格加载状态
+.el-table__body-wrapper {
+  .el-loading-mask {
+    background-color: rgba(255, 255, 255, 0.95);
+
+    .el-loading-spinner {
+      .circular {
+        .path {
+          stroke: #06b6d4;
+        }
+      }
+
+      .el-loading-text {
+        color: #475569;
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+// ========== 现代化分页器样式 ==========
+.el-pagination {
+  margin-top: 16px;
+  text-align: center;
+  padding: 0;
+
+  // 总数文字
+  .el-pagination__total {
+    color: #64748b;
+    font-weight: 500;
+    font-size: 14px;
+  }
+
+  // 每页显示数
+  .el-pagination__sizes {
+    .el-input__inner {
+      border-radius: 6px;
+      border-color: #e2e8f0;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: #cbd5e1;
+      }
+
+      &:focus {
+        border-color: #06b6d4;
+      }
+    }
+  }
+
+  // 页码按钮
+  .btn-prev,
+  .btn-next {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    color: #64748b;
+    padding: 0 12px;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background-color: #f8fafc;
+      border-color: #cbd5e1;
+      color: #06b6d4;
+    }
+
+    &:disabled {
+      background-color: #fafafa;
+      border-color: #f1f5f9;
+      color: #cbd5e1;
+      cursor: not-allowed;
+    }
+  }
+
+  // 页码列表
+  .el-pager {
+    li {
+      background-color: transparent;
+      border: none;
+      border-radius: 6px;
+      color: #64748b;
+      font-weight: 500;
+      margin: 0 2px;
+      min-width: 32px;
+      height: 32px;
+      line-height: 32px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: #f8fafc;
+        color: #06b6d4;
+      }
+
+      &.active {
+        background: #06b6d4;
+        color: #ffffff;
+        font-weight: 600;
+
+        &:hover {
+          background: #0891b2;
+        }
+      }
+
+      &.btn-quicknext,
+      &.btn-quickprev {
+        background-color: transparent;
+
+        &:hover {
+          color: #06b6d4;
+        }
+      }
+    }
+  }
+
+  // 跳转输入框
+  .el-pagination__jump {
+    color: #64748b;
+    font-weight: 500;
+    font-size: 14px;
+
+    .el-input__inner {
+      border-radius: 6px;
+      border-color: #e2e8f0;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: #cbd5e1;
+      }
+
+      &:focus {
+        border-color: #06b6d4;
+      }
+    }
+  }
+}
+
+// ========== 现代化表格容器样式 ==========
+.app-container {
+  .el-table {
+    margin-bottom: 16px;
+  }
+
+  // 筛选容器 - 简洁设计
+  .filter-container {
+    margin-bottom: 16px;
+    padding: 16px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #f1f5f9;
+
+    .el-form-item {
+      margin-bottom: 0;
+    }
+
+    .el-button {
+      margin-left: 8px;
+    }
+  }
 }
