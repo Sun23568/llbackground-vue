@@ -1,47 +1,93 @@
 <template>
   <div class="page-container" :style="{ backgroundImage: `url(${backgroundImageUrl})` }">
     <div class="chat-container">
-      <div class="chat-body">
-        <SimpleBar style="height: 100%;">
-          <div class="response-area" id="response" style="white-space: pre-line;" @mouseenter="showCopyButton = true"
-            @mouseleave="showCopyButton = false">
-            {{ response }}
-            <!-- 新增: 复制和清空按钮 -->
-            <div v-if="isResponseComplete" class="button-group">
-              <el-button-group>
-                <el-button type="text" class="copy-button" @click="copyResponse">复制</el-button>
-                <el-button type="text" class="clear-button" @click="clearResponse">清空</el-button>
-                <!-- 新增: 生成关键字按钮 -->
-                <el-button type="text" :disabled="isGeneratingKeywords || isGeneratingImage"
-                  class="generate-keywords-button" @click="generateImage">生成图片
-                </el-button>
-              </el-button-group>
+      <!-- 左侧对话区 -->
+      <div class="chat-section">
+        <div class="chat-header">
+          <h2 class="chat-title">少女历险记</h2>
+          <UploadBackgroundButton ref="uploadBgBtn" :aiMenuId="aiMenuId" @background-updated="updateBackgroundImage" />
+        </div>
+
+        <div class="chat-body">
+          <SimpleBar class="response-scrollbar">
+            <div class="response-area" id="response">
+              <div v-if="!response" class="empty-state">
+                <i class="el-icon-chat-dot-round"></i>
+                <p>开始你的冒险故事吧...</p>
+              </div>
+              <div v-else class="response-content">
+                {{ response }}
+              </div>
             </div>
+          </SimpleBar>
+
+          <!-- 操作按钮 -->
+          <div v-if="isResponseComplete" class="action-buttons">
+            <el-button size="small" icon="el-icon-document-copy" @click="copyResponse">复制</el-button>
+            <el-button size="small" icon="el-icon-delete" @click="clearResponse">清空</el-button>
+            <el-button
+              size="small"
+              icon="el-icon-picture"
+              type="primary"
+              :disabled="isGeneratingKeywords || isGeneratingImage"
+              :loading="isGeneratingKeywords || isGeneratingImage"
+              @click="generateImage"
+            >
+              生成图片
+            </el-button>
           </div>
-        </SimpleBar>
-      </div>
-      <!-- 新增: 图片展示区域 -->
-      <div class="image-area">
-        <div v-if="showSteps" class="steps-container">
-          <el-steps :active="currentStep" direction="vertical" finish-status="success" class="vertical-steps">
-            <el-step title="开始生成" />
-            <el-step title="提取关键词" />
-            <el-step title="构建文生图参数" />
-            <el-step title="生成图片" />
-          </el-steps>
         </div>
-        <img v-if="imageUrl" :src=imageUrl alt="展示图片" class="display-image" />
-        <!-- 新增: 加载指示器 -->
-        <div v-if="isGeneratingKeywords || isGeneratingImage" class="loading-indicator">
-          <i class="el-icon-loading"></i>
+
+        <!-- 输入区 -->
+        <div class="question-input">
+          <el-input
+            v-model="question"
+            placeholder="输入你的问题，开始冒险..."
+            @keyup.enter.native="askQuestion"
+            class="question-input-field"
+          >
+            <template slot="append">
+              <el-button
+                icon="el-icon-s-promotion"
+                @click="askQuestion"
+                :loading="isLoading"
+                :disabled="isLoading"
+              ></el-button>
+            </template>
+          </el-input>
         </div>
       </div>
-      <div class="question-input">
-        <el-input v-model="question" size="medium" placeholder="请输入你的问题" @keyup.enter.native="askQuestion" />
-        <el-button type="primary" @click="askQuestion" :loading="isLoading" :disabled="isLoading">
-          提问
-        </el-button>
-        <UploadBackgroundButton ref="uploadBgBtn" :aiMenuId="aiMenuId" @background-updated="updateBackgroundImage" />
+
+      <!-- 右侧图片区 -->
+      <div class="image-section">
+        <div class="image-container">
+          <!-- 步骤指示 -->
+          <div v-if="showSteps" class="steps-overlay">
+            <el-steps :active="currentStep" direction="vertical" finish-status="success">
+              <el-step title="开始生成" />
+              <el-step title="提取关键词" />
+              <el-step title="构建参数" />
+              <el-step title="生成图片" />
+            </el-steps>
+          </div>
+
+          <!-- 图片展示 -->
+          <div v-if="imageUrl && !showSteps" class="image-wrapper">
+            <img :src="imageUrl" alt="生成的图片" class="display-image" />
+          </div>
+
+          <!-- 空状态 -->
+          <div v-if="!imageUrl && !showSteps && !isGeneratingImage" class="image-empty-state">
+            <i class="el-icon-picture-outline"></i>
+            <p>图片将在这里显示</p>
+          </div>
+
+          <!-- 加载指示 -->
+          <div v-if="(isGeneratingKeywords || isGeneratingImage) && !showSteps" class="loading-overlay">
+            <i class="el-icon-loading"></i>
+            <p>正在生成图片...</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -246,275 +292,311 @@ export default {
 </script>
 
 <style scoped>
-body,
-html {
-  height: 100%;
-  margin: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
+/* 页面容器 */
 .page-container {
   background-size: cover;
-  /* 背景图片覆盖整个屏幕 */
   background-position: center;
-  /* 背景图片居中 */
   background-repeat: no-repeat;
-  /* 防止背景图片重复 */
-  height: 100vh;
-  /* 设置容器高度为视口高度 */
+  background-attachment: fixed;
+  min-height: 100vh;
   width: 100%;
-  /* 确保容器宽度为视口宽度 */
   display: flex;
   justify-content: center;
   align-items: center;
-  flex-direction: column;
-}
-
-.chat-container {
-  max-width: 1000px;
-  /* 增加最大宽度以适应图片区域 */
-  width: 90%;
-  /* 使用相对单位 */
   padding: 20px;
-  border: 1px solid #ebeef5;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: row;
-  gap: 20px;
-  margin: 0 auto;
-  height: 75vh;
-  background-color: rgba(255, 255, 255, 0.85);
   position: relative;
 }
 
-.chat-body {
-  flex: 0 0 67%;
+.page-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+  pointer-events: none;
+}
+
+/* 聊天容器 */
+.chat-container {
+  max-width: 1400px;
+  width: 95%;
+  height: 85vh;
+  display: grid;
+  grid-template-columns: 1fr 450px;
+  gap: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+/* 左侧对话区 */
+.chat-section {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  height: 100%;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px) saturate(180%);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+}
+
+/* 聊天头部 */
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chat-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+/* 聊天主体 */
+.chat-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   position: relative;
+}
+
+.response-scrollbar {
+  flex: 1;
+  overflow: hidden;
+}
+
+/deep/ .response-scrollbar .simplebar-content {
+  padding: 24px;
 }
 
 .response-area {
-  background-color: #ebeef5;
-  padding: 15px;
-  border-radius: 4px;
-  border: 1px solid #ebeef5;
-  overflow-y: auto;
-  flex: 1;
-  background-color: rgba(255, 255, 255, 0.5);
-  margin-bottom: 60px;
+  min-height: 100%;
 }
 
-.button-group {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1;
-}
-
-.copy-button,
-.clear-button {
-  margin-left: 5px;
-}
-
-.copy-button:hover,
-.clear-button:hover {}
-
-.response-area:hover .copy-button,
-.response-area:hover .clear-button {
-  display: inline-block;
-}
-
-.copy-button {
-  background-color: transparent;
-  color: #409EFF;
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-  transition: color 0.3s ease;
-}
-
-.copy-button:hover {
-  color: #66B1FF;
-}
-
-.clear-button {
-  background-color: transparent;
-  color: #409EFF;
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-  transition: color 0.3s ease;
-}
-
-.clear-button:hover {
-  color: #66B1FF;
-}
-
-.question-input {
+/* 空状态 */
+.empty-state {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  background-color: rgba(255, 255, 255, 0.5);
-  padding: 10px;
-  border-radius: 4px;
-  border: 1px solid #ebeef5;
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 1;
-}
-
-.el-input {
-  flex: 1;
-}
-
-.response-area::-webkit-scrollbar {
-  width: 8px;
-}
-
-.response-area::-webkit-scrollbar-thumb {
-  background-color: #888;
-  border-radius: 4px;
-}
-
-.response-area::-webkit-scrollbar-thumb:hover {
-  background-color: #555;
-}
-
-.response-area::-webkit-scrollbar-track {
-  background-color: #f1f1f1;
-}
-
-.copy-button {
-  display: none;
-  background-color: #409EFF;
-  color: #FFFFFF;
-  border: none;
-  border-radius: 4px;
-  padding: 5px 10px;
-  transition: background-color 0.3s ease;
-  font-size: 14px;
-}
-
-.response-area:hover .copy-button {
-  display: inline-block;
-}
-
-.copy-button:hover {
-  background-color: #66B1FF;
-}
-
-.clear-button {
-  display: none;
-  background-color: #409EFF;
-  /* 还原默认背景色 */
-  color: #FFFFFF;
-  /* 还原默认文字颜色 */
-  border: none;
-  /* 还原默认边框 */
-  border-radius: 4px;
-  /* 还原默认圆角 */
-  padding: 5px 10px;
-  /* 还原默认内边距 */
-  transition: background-color 0.3s ease;
-  /* 还原默认过渡效果 */
-  font-size: 14px;
-  /* 还原默认字体大小 */
-}
-
-.response-area:hover .clear-button {
-  display: inline-block;
-  /* 修改: 使用 inline-block 使按钮排列在一行 */
-}
-
-.clear-button:hover {
-  background-color: #66B1FF;
-  /* 还原默认鼠标悬停时的背景色 */
-}
-
-.generate-keywords-button {
-  display: none;
-  background-color: #409EFF;
-  /* 还原默认背景色 */
-  color: #FFFFFF;
-  /* 还原默认文字颜色 */
-  border: none;
-  /* 还原默认边框 */
-  border-radius: 4px;
-  /* 还原默认圆角 */
-  padding: 5px 10px;
-  /* 还原默认内边距 */
-  transition: background-color 0.3s ease;
-  /* 还原默认过渡效果 */
-  font-size: 14px;
-  /* 还原默认字体大小 */
-}
-
-.response-area:hover .generate-keywords-button {
-  display: inline-block;
-  /* 修改: 使用 inline-block 使按钮排列在一行 */
-}
-
-.generate-keywords-button:hover {
-  background-color: #66B1FF;
-  /* 还原默认鼠标悬停时的背景色 */
-}
-
-.generate-keywords-button[disabled] {
-  background-color: #cccccc;
-  /* 禁用时的背景色 */
-  cursor: not-allowed;
-  /* 禁用时的鼠标指针 */
-}
-
-.image-area {
-  flex: 0 0 33%;
-  /* 修改: 设置宽度为33% */
-  display: flex;
   justify-content: center;
-  align-items: center;
-  background-color: #f5f7fa;
-  padding: 15px;
-  border-radius: 4px;
-  border: 1px solid #ebeef5;
-  max-height: calc(94% - 21px);
-  min-height: calc(94% - 60px);
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 60px;
-  background-color: rgba(255, 255, 255, 0.5);
+  height: 400px;
+  color: #9ca3af;
+}
+
+.empty-state i {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  font-size: 16px;
+  margin: 0;
+}
+
+/* 响应内容 */
+.response-content {
+  font-size: 15px;
+  line-height: 1.8;
+  color: #374151;
+  white-space: pre-line;
+  word-wrap: break-word;
+}
+
+/* 操作按钮 */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+/* 输入区 */
+.question-input {
+  padding: 20px 24px;
+  border-top: 1px solid #e5e7eb;
+  background-color: #fff;
+}
+
+.question-input-field {
+  font-size: 15px;
+}
+
+/deep/ .question-input-field .el-input__inner {
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+  padding: 12px 16px;
+  font-size: 15px;
+  transition: all 0.3s ease;
+}
+
+/deep/ .question-input-field .el-input__inner:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/deep/ .question-input-field .el-input-group__append {
+  background-color: #667eea;
+  border: none;
+  border-radius: 0 12px 12px 0;
+  padding: 0;
+}
+
+/deep/ .question-input-field .el-input-group__append .el-button {
+  background: transparent;
+  border: none;
+  color: #fff;
+  padding: 12px 20px;
+  font-size: 18px;
+}
+
+/deep/ .question-input-field .el-input-group__append .el-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 右侧图片区 */
+.image-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.image-container {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 步骤覆盖层 */
+.steps-overlay {
+  width: 100%;
+  padding: 40px;
+}
+
+/deep/ .steps-overlay .el-steps {
+  padding: 20px;
+}
+
+/* 图片包装器 */
+.image-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
 }
 
 .display-image {
   max-width: 100%;
   max-height: 100%;
-  border-radius: 4px;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease;
 }
 
-/* 新增: 加载指示器样式 */
-.loading-indicator {
+.display-image:hover {
+  transform: scale(1.02);
+}
+
+/* 图片空状态 */
+.image-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  height: 100%;
+}
+
+.image-empty-state i {
+  font-size: 80px;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+.image-empty-state p {
+  font-size: 16px;
+  margin: 0;
+}
+
+/* 加载覆盖层 */
+.loading-overlay {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 24px;
-  color: #409EFF;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  z-index: 10;
 }
 
-.steps-container {
-  width: 100%;
-  padding: 10px;
-  background-color: rgba(255, 255, 255, 0.7);
+.loading-overlay i {
+  font-size: 48px;
+  color: #667eea;
+  margin-bottom: 16px;
+  animation: rotate 1.5s linear infinite;
+}
+
+.loading-overlay p {
+  font-size: 15px;
+  color: #667eea;
+  font-weight: 500;
+  margin: 0;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 自定义滚动条 */
+/deep/ .simplebar-scrollbar::before {
+  background-color: #cbd5e1;
   border-radius: 4px;
-  margin-bottom: 10px;
+}
+
+/deep/ .simplebar-track.simplebar-vertical {
+  width: 6px;
+  right: 4px;
+}
+
+/* 响应式 */
+@media (max-width: 1200px) {
+  .chat-container {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 85vh;
+  }
+
+  .image-section {
+    min-height: 400px;
+  }
 }
 </style>
