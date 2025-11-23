@@ -116,23 +116,30 @@ export default {
       this.dialogFormVisible = true;
     },
     createConfig() {
-      // 模拟创建配置
-      const newConfig = {
-        id: this.list.length + 1,
-        ...this.tempConfigForm
-      };
-      this.list.push(newConfig);
-      this.dialogFormVisible = false;
-      this.$message.success('创建成功');
+      this.api({
+        url: "/ai/config/add",
+        method: "post",
+        data: this.tempConfigForm
+      }).then(() => {
+        this.dialogFormVisible = false;
+        this.$message.success('创建成功');
+        this.getList();
+      }).catch(err => {
+        this.$message.error(err.message || '创建失败');
+      });
     },
     updateConfig() {
-      // 模拟更新配置
-      const index = this.list.findIndex(item => item.id === this.tempConfigForm.id);
-      if (index !== -1) {
-        this.list[index] = { ...this.tempConfigForm };
-      }
-      this.dialogFormVisible = false;
-      this.$message.success('修改成功');
+      this.api({
+        url: "/ai/config/update",
+        method: "post",
+        data: this.tempConfigForm
+      }).then(() => {
+        this.dialogFormVisible = false;
+        this.$message.success('修改成功');
+        this.getList();
+      }).catch(err => {
+        this.$message.error(err.message || '修改失败');
+      });
     }
   }
 }
