@@ -1,6 +1,6 @@
 <template>
   <el-upload action="" :auto-upload="false" :show-file-list="false" :on-change="handleUpload"
-    accept="image/jpeg,image/png" v-permission="'ai:backgroundUpload'">
+    accept="image/jpeg,image/png" v-permission="'ai:config:background-image:upload'">
     <el-button type="primary">背景图片</el-button>
   </el-upload>
 </template>
@@ -42,9 +42,9 @@ export default {
 
       const formData = new FormData();
       formData.append('file', file.raw);
-      formData.append('aiMenuId', this.aiMenuId);
+      formData.append('aiMenuCode', this.aiMenuId);
       await this.api({
-        url: '/ai/upload/background',
+        url: '/ai/config/background-image/upload',
         method: 'post',
         data: formData,
       })
@@ -61,7 +61,7 @@ export default {
     async fetchAndSetBackground() {
       console.log('fetchAndSetBackground');
       await this.api({
-        url: '/ai/background?aiMenuId=' + this.aiMenuId,
+        url: '/ai/config/background-image?aiMenuCode=' + this.aiMenuId,
         method: 'get',
       })
         .then(response => {

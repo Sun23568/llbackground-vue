@@ -424,7 +424,7 @@ export default {
           this.api({
             url: "/ai/config/update",
             method: "post",
-            data: this.tempConfigForm
+            data: submitData
           }).then(() => {
             this.dialogFormVisible = false;
             this.$message({

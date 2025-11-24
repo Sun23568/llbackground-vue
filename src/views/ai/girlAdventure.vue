@@ -128,7 +128,7 @@ export default {
     async fetchBackground() {
       try {
         const response = await this.api({
-          url: '/ai/background?aiMenuId=' + this.aiMenuId,
+          url: '/ai/config/background-image?aiMenuCode=' + this.aiMenuId,
           method: 'get'
         });
         this.backgroundImageUrl = response.backgroundImage;
@@ -150,7 +150,8 @@ export default {
       const body = {
         message: this.question,
         context: this.chatList,
-        model: 'luoli'
+        model: 'luoli',
+        aiMenuCode: this.aiMenuId
       };
 
       try {
@@ -237,7 +238,8 @@ export default {
 
       const body = {
         model: 'makeKey',
-        message: this.response
+        message: this.response,
+        aiMenuCode: this.aiMenuId
       };
 
       try {
@@ -262,7 +264,7 @@ export default {
         headers: {
           'Content-Type': 'application/json;charset=UTF-8',
         },
-        body: JSON.stringify({ keyWord: this.keyWord, modelName: this.aiMenuId })
+        body: JSON.stringify({ keyWord: this.keyWord, aiMenuCode: this.aiMenuId })
       });
       const reader = response.body.getReader();
       let done = false;
