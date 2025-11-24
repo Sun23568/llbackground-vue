@@ -5,7 +5,6 @@
       <div class="chat-section">
         <div class="chat-header">
           <h2 class="chat-title">少女历险记</h2>
-          <UploadBackgroundButton ref="uploadBgBtn" :aiMenuId="aiMenuId" @background-updated="updateBackgroundImage" />
         </div>
 
         <div class="chat-body">
@@ -95,13 +94,11 @@
 
 <script>
 import SimpleBar from 'simplebar-vue';
-import UploadBackgroundButton from '@/components/UploadBackgroundButton.vue';
 import 'simplebar/dist/simplebar.min.css';
 
 export default {
   components: {
-    SimpleBar,
-    UploadBackgroundButton
+    SimpleBar
   },
   data() {
     return {
@@ -125,16 +122,20 @@ export default {
   },
   mounted() {
     // 加载背景图
-    this.$nextTick(() => {
-      if (this.$refs.uploadBgBtn) {
-        this.$refs.uploadBgBtn.fetchAndSetBackground();
-      }
-    });
+    this.fetchBackground();
   },
   methods: {
-    async updateBackgroundImage(data) {
-      this.backgroundImageUrl = data.backgroundFileId;
-      this.contextSize = data.contextSize;
+    async fetchBackground() {
+      try {
+        const response = await this.api({
+          url: '/ai/background?aiMenuId=' + this.aiMenuId,
+          method: 'get'
+        });
+        this.backgroundImageUrl = response.backgroundImage;
+        this.contextSize = response.contextSize;
+      } catch (error) {
+        console.error('加载背景图片失败', error);
+      }
     },
     async askQuestion() {
       if (this.isLoading) return; // 如果已经在加载中，不重复请求

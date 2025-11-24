@@ -207,9 +207,39 @@
               placeholder="请输入参数文件ID"></el-input>
           </el-form-item>
           <el-form-item label="背景图片">
-            <el-input
-              v-model="tempConfigForm.backgroundImage"
-              placeholder="请输入背景图片URL或路径"></el-input>
+            <div class="background-upload-container">
+              <el-upload
+                action=""
+                :auto-upload="false"
+                :show-file-list="false"
+                :on-change="handleBackgroundUpload"
+                accept="image/jpeg,image/png,image/jpg"
+                class="background-uploader">
+                <el-button size="small" icon="el-icon-upload">选择图片</el-button>
+              </el-upload>
+              <div v-if="tempConfigForm.backgroundImage" class="upload-preview">
+                <el-image
+                  :src="tempConfigForm.backgroundImage"
+                  :preview-src-list="[tempConfigForm.backgroundImage]"
+                  fit="cover"
+                  class="preview-image">
+                  <div slot="error" class="image-slot">
+                    <i class="el-icon-picture-outline"></i>
+                  </div>
+                </el-image>
+                <div class="preview-actions">
+                  <span class="image-name">{{ getImageName(tempConfigForm.backgroundImage) }}</span>
+                  <el-button
+                    type="text"
+                    size="mini"
+                    icon="el-icon-delete"
+                    @click="removeBackgroundImage">
+                    删除
+                  </el-button>
+                </div>
+              </div>
+              <span v-else class="upload-tip">支持 jpg、png 格式，大小不超过 2MB</span>
+            </div>
           </el-form-item>
         </div>
       </el-form>
@@ -360,6 +390,10 @@ export default {
       this.$refs.configForm.validate((valid) => {
         if (valid) {
           this.submitLoading = true;
+          const submitData = { ...this.tempConfigForm };
+          if (submitData.backgroundImage) {
+            submitData.backgroundImage = this.getImageName(submitData.backgroundImage);
+          }
           this.api({
             url: "/ai/config/add",
             method: "post",
@@ -383,6 +417,10 @@ export default {
       this.$refs.configForm.validate((valid) => {
         if (valid) {
           this.submitLoading = true;
+          const submitData = { ...this.tempConfigForm };
+          if (submitData.backgroundImage) {
+            submitData.backgroundImage = this.getImageName(submitData.backgroundImage);
+          }
           this.api({
             url: "/ai/config/update",
             method: "post",
@@ -401,6 +439,62 @@ export default {
           });
         }
       });
+    },
+
+    async handleBackgroundUpload(file) {
+      const isImage = file.raw.type === 'image/jpeg' || file.raw.type === 'image/png' || file.raw.type === 'image/jpg';
+      const isLt2M = file.size / 1024 / 1024 < 2;
+
+      if (!isImage) {
+        this.$message.error('上传图片只能是 JPG/PNG 格式!');
+        return false;
+      }
+      if (!isLt2M) {
+        this.$message.error('上传图片大小不能超过 2MB!');
+        return false;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file.raw);
+      formData.append('aiMenuId', this.tempConfigForm.menuCode);
+
+      try {
+        const loading = this.$loading({
+          lock: true,
+          text: '上传中...',
+          spinner: 'el-icon-loading',
+          background: 'rgba(0, 0, 0, 0.7)'
+        });
+
+        const response = await this.api({
+          url: '/ai/upload/background',
+          method: 'post',
+          data: formData
+        });
+
+        loading.close();
+        this.$message.success('上传成功!');
+        this.tempConfigForm.backgroundImage = response;
+      } catch (error) {
+        this.$message.error('上传失败');
+      }
+    },
+
+    removeBackgroundImage() {
+      this.$confirm('确定要删除背景图片吗?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        this.tempConfigForm.backgroundImage = '';
+        this.$message.success('删除成功');
+      }).catch(() => {});
+    },
+
+    getImageName(url) {
+      if (!url) return '';
+      const parts = url.split('/');
+      return parts[parts.length - 1] || '背景图片';
     }
   }
 }
@@ -508,6 +602,74 @@ export default {
   font-size: 12px;
   color: #606266;
   font-family: 'Courier New', monospace;
+}
+
+/* 背景图片上传 */
+.background-upload-container {
+  width: 100%;
+}
+
+.background-uploader {
+  display: inline-block;
+  margin-bottom: 12px;
+}
+
+.upload-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: #f5f7fa;
+  border-radius: 6px;
+  margin-top: 12px;
+}
+
+.preview-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  border: 1px solid #dcdfe6;
+}
+
+.preview-image >>> .el-image__inner {
+  border-radius: 4px;
+}
+
+.image-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: #f5f7fa;
+  color: #c0c4cc;
+}
+
+.image-slot i {
+  font-size: 24px;
+}
+
+.preview-actions {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.image-name {
+  font-size: 13px;
+  color: #606266;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 300px;
+}
+
+.upload-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-left: 8px;
 }
 
 /* 操作按钮 */
