@@ -1061,6 +1061,29 @@ export default {
   word-break: break-word;
   letter-spacing: 0.4px;
   font-weight: 400;
+  max-height: 120px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+/* 关键词滚动条样式 */
+.keyword-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.keyword-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.keyword-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.keyword-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.6);
 }
 
 /* 图片包装器 */
