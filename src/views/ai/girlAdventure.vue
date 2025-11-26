@@ -1,6 +1,6 @@
 <template>
   <div class="page-container" :style="{ backgroundImage: `url(${backgroundImageUrl})` }">
-    <div class="chat-container">
+    <div class="chat-container" :class="{ 'show-image-section': showImageSection }">
       <!-- 左侧对话区 -->
       <div class="chat-section">
         <div class="chat-header">
@@ -10,9 +10,17 @@
         <div class="chat-body">
           <SimpleBar class="response-scrollbar">
             <div class="response-area" id="response">
-              <div v-if="!response" class="empty-state">
+              <div v-if="!response && !isLoading" class="empty-state">
                 <i class="el-icon-chat-dot-round"></i>
                 <p>开始你的冒险故事吧...</p>
+              </div>
+              <div v-else-if="isLoading && !response" class="loading-state">
+                <div class="loading-animation">
+                  <div class="dot"></div>
+                  <div class="dot"></div>
+                  <div class="dot"></div>
+                </div>
+                <p>AI正在思考中...</p>
               </div>
               <div v-else class="response-content">
                 {{ response }}
@@ -58,21 +66,61 @@
       </div>
 
       <!-- 右侧图片区 -->
-      <div class="image-section">
+      <div v-if="showImageSection" class="image-section">
+        <!-- 关键词展示区 -->
+        <div v-if="keyWord && imageUrl" class="keyword-display">
+          <div class="keyword-label">生成关键词</div>
+          <div class="keyword-content">{{ keyWord }}</div>
+        </div>
+
         <div class="image-container">
+          <!-- 关闭按钮 -->
+          <div class="close-image-section" @click="closeImageSection">
+            <i class="el-icon-close"></i>
+          </div>
           <!-- 步骤指示 -->
           <div v-if="showSteps" class="steps-overlay">
-            <el-steps :active="currentStep" direction="vertical" finish-status="success">
-              <el-step title="开始生成" />
-              <el-step title="提取关键词" />
-              <el-step title="构建参数" />
-              <el-step title="生成图片" />
-            </el-steps>
+            <div class="modern-steps">
+              <div
+                v-for="(step, index) in steps"
+                :key="index"
+                class="step-item"
+                :class="{
+                  'step-active': currentStep === index,
+                  'step-completed': currentStep > index,
+                  'step-waiting': currentStep < index
+                }"
+              >
+                <div class="step-icon-wrapper">
+                  <div class="step-icon">
+                    <i v-if="currentStep > index" class="el-icon-check"></i>
+                    <i v-else-if="currentStep === index" class="el-icon-loading"></i>
+                    <span v-else>{{ index + 1 }}</span>
+                  </div>
+                  <div v-if="index < steps.length - 1" class="step-line"></div>
+                </div>
+                <div class="step-content">
+                  <div class="step-title">{{ step.title }}</div>
+                  <div class="step-description">{{ step.description }}</div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- 图片展示 -->
           <div v-if="imageUrl && !showSteps" class="image-wrapper">
             <img :src="imageUrl" alt="生成的图片" class="display-image" />
+            <!-- 图片操作按钮 -->
+            <div class="image-actions">
+              <el-button
+                type="primary"
+                icon="el-icon-download"
+                size="small"
+                @click="downloadImage"
+              >
+                下载图片
+              </el-button>
+            </div>
           </div>
 
           <!-- 空状态 -->
@@ -117,7 +165,14 @@ export default {
       isGeneratingKeywords: false, // 新增: 标志位，表示是否正在生成关键字
       isGeneratingImage: false, // 新增: 标志位，表示是否正在生成图片
       showSteps: false,     // 控制步骤条显示
-      currentStep: 0        // 当前步骤
+      currentStep: 0,       // 当前步骤
+      showImageSection: false, // 控制右侧图片区域显示
+      steps: [
+        { title: '开始生成', description: '准备生成图片' },
+        { title: '提取关键词', description: 'AI分析内容关键信息' },
+        { title: '构建参数', description: '配置生成参数' },
+        { title: '生成图片', description: 'ComfyUI绘制中' }
+      ]
     };
   },
   mounted() {
@@ -140,7 +195,10 @@ export default {
     async askQuestion() {
       if (this.isLoading) return; // 如果已经在加载中，不重复请求
       this.isResponseComplete = false;
-      this.response = ''; // 清空之前的回答
+      // 不立即清空，等待新内容加载
+      const oldResponse = this.response; // 保存旧内容
+      this.response = ''; // 准备接收新内容
+
       if (this.chatList.length > this.contextSize) {
         this.chatList.shift();
       }
@@ -225,10 +283,12 @@ export default {
     clearResponse() {
       this.response = '';
       this.imageUrl = ''; // 清空图片URL
+      this.keyWord = ''; // 清空关键词
     },
 
     async generateImage() {
       this.imageUrl = '';
+      this.showImageSection = true; // 显示右侧图片区域
 
       this.showSteps = true;
       this.currentStep = 0;
@@ -289,12 +349,111 @@ export default {
       this.isGeneratingImage = false;
       this.currentStep = 4;
       this.showSteps = false;
+    },
+
+    async downloadImage() {
+      if (!this.imageUrl) {
+        this.$message.warning('没有可下载的图片');
+        return;
+      }
+
+      let loading = null;
+      try {
+        // 显示加载提示
+        loading = this.$loading({
+          lock: true,
+          text: '正在准备下载...',
+          spinner: 'el-icon-loading',
+          background: 'rgba(0, 0, 0, 0.7)'
+        });
+
+        // 尝试使用canvas方式下载（解决CORS问题）
+        const img = new Image();
+        img.crossOrigin = 'anonymous'; // 尝试匿名跨域
+
+        img.onload = () => {
+          try {
+            // 创建canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+
+            // 转换为blob并下载
+            canvas.toBlob((blob) => {
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              const timestamp = new Date().getTime();
+              link.download = `少女历险记_${timestamp}.png`;
+              link.href = url;
+              link.click();
+              URL.revokeObjectURL(url);
+
+              if (loading) {
+                loading.close();
+              }
+              this.$message.success('图片下载成功！');
+            }, 'image/png');
+          } catch (canvasError) {
+            console.error('Canvas下载失败', canvasError);
+            // Canvas方式失败，使用新窗口打开的方式
+            this.fallbackDownload(loading);
+          }
+        };
+
+        img.onerror = () => {
+          console.error('图片加载失败');
+          // 图片加载失败，使用新窗口打开的方式
+          this.fallbackDownload(loading);
+        };
+
+        img.src = this.imageUrl;
+
+      } catch (error) {
+        console.error('下载图片失败', error);
+        if (loading) {
+          loading.close();
+        }
+        this.$message.error('下载图片失败，请重试');
+      }
+    },
+
+    fallbackDownload(loading) {
+      // 备选方案：在新窗口打开图片
+      window.open(this.imageUrl, '_blank');
+
+      if (loading) {
+        loading.close();
+      }
+
+      this.$message({
+        message: '已在新窗口打开图片，请右键保存图片',
+        type: 'info',
+        duration: 4000
+      });
+    },
+
+    closeImageSection() {
+      // 关闭图片区域
+      this.showImageSection = false;
     }
   }
 };
 </script>
 
 <style scoped>
+/* 全局字体优化 */
+* {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+               'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+               'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'WenQuanYi Micro Hei',
+               sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
 /* 页面容器 */
 .page-container {
   background-size: cover;
@@ -327,10 +486,15 @@ export default {
   width: 95%;
   height: 85vh;
   display: grid;
-  grid-template-columns: 1fr 450px;
+  grid-template-columns: 1fr;
   gap: 24px;
   position: relative;
   z-index: 1;
+  transition: all 0.4s ease;
+}
+
+.chat-container.show-image-section {
+  grid-template-columns: 1fr 450px;
 }
 
 /* 左侧对话区 */
@@ -349,17 +513,44 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
+  padding: 24px 28px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.chat-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: float 6s ease-in-out infinite;
 }
 
 .chat-title {
   margin: 0;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   color: #fff;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
+}
+
+/* 浮动动画 */
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-20px, 20px);
+  }
 }
 
 /* 聊天主体 */
@@ -374,14 +565,18 @@ export default {
 .response-scrollbar {
   flex: 1;
   overflow: hidden;
+  max-height: 100%;
 }
 
 /deep/ .response-scrollbar .simplebar-content {
   padding: 24px;
+  min-height: 100%;
 }
 
 .response-area {
   min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 空状态 */
@@ -403,24 +598,128 @@ export default {
 .empty-state p {
   font-size: 16px;
   margin: 0;
+  letter-spacing: 0.5px;
+  font-weight: 400;
+}
+
+/* 加载状态 */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  color: #667eea;
+}
+
+.loading-animation {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.loading-animation .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  animation: bounce 1.4s ease-in-out infinite;
+}
+
+.loading-animation .dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-animation .dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.loading-state p {
+  font-size: 16px;
+  margin: 0;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+  animation: fadeInOut 1.5s ease-in-out infinite;
+}
+
+@keyframes fadeInOut {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 /* 响应内容 */
 .response-content {
-  font-size: 15px;
-  line-height: 1.8;
-  color: #374151;
+  font-size: 16px;
+  line-height: 2;
+  color: #2c3e50;
   white-space: pre-line;
   word-wrap: break-word;
+  word-break: break-word;
+  letter-spacing: 0.5px;
+  font-weight: 400;
+  padding: 4px 0;
+  text-align: justify;
+  flex: 1;
+  overflow-wrap: break-word;
+}
+
+/* 优化中文字符显示 */
+.response-content::first-line {
+  line-height: 2.2;
+}
+
+/* 段落间距 */
+.response-content p {
+  margin: 12px 0;
 }
 
 /* 操作按钮 */
 .action-buttons {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   padding: 16px 24px;
   border-top: 1px solid #e5e7eb;
-  background-color: #f9fafb;
+  background: linear-gradient(to bottom, #fafafa 0%, #ffffff 100%);
+  animation: slideInUp 0.4s ease-out;
+}
+
+.action-buttons .el-button {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.action-buttons .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #667eea;
+}
+
+.action-buttons .el-button--primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+}
+
+.action-buttons .el-button--primary:hover {
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
 }
 
 /* 输入区 */
@@ -435,41 +734,112 @@ export default {
 }
 
 /deep/ .question-input-field .el-input__inner {
-  border-radius: 12px;
+  border-radius: 12px 0 0 12px;
   border: 2px solid #e5e7eb;
+  border-right: none;
   padding: 12px 16px;
-  font-size: 15px;
+  font-size: 16px;
+  line-height: 1.6;
+  letter-spacing: 0.3px;
   transition: all 0.3s ease;
 }
 
 /deep/ .question-input-field .el-input__inner:focus {
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  position: relative;
+  z-index: 1;
 }
 
 /deep/ .question-input-field .el-input-group__append {
-  background-color: #667eea;
-  border: none;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: 2px solid #667eea;
+  border-left: none;
   border-radius: 0 12px 12px 0;
   padding: 0;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s ease;
+  margin-left: -1px;
+}
+
+/deep/ .question-input-field .el-input-group__append::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+/deep/ .question-input-field .el-input-group__append:hover::before {
+  left: 100%;
 }
 
 /deep/ .question-input-field .el-input-group__append .el-button {
   background: transparent;
   border: none;
   color: #fff;
-  padding: 12px 20px;
-  font-size: 18px;
+  padding: 12px 24px;
+  font-size: 20px;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
 }
 
 /deep/ .question-input-field .el-input-group__append .el-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
+}
+
+/deep/ .question-input-field .el-input-group__append .el-button.is-loading {
+  animation: buttonLoading 1s ease-in-out infinite;
+}
+
+/* 发送按钮加载动画 */
+@keyframes buttonLoading {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* 发送按钮图标动画 */
+/deep/ .question-input-field .el-input-group__append .el-button:not(.is-loading):active {
+  animation: sendPulse 0.3s ease;
+}
+
+@keyframes sendPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* 右侧图片区 */
 .image-section {
   display: flex;
   flex-direction: column;
+  animation: slideInRight 0.4s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .image-container {
@@ -486,14 +856,211 @@ export default {
   justify-content: center;
 }
 
+/* 关闭按钮 - 位于容器内部右上角 */
+.close-image-section {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+}
+
+.close-image-section:hover {
+  background: #ffffff;
+  transform: rotate(90deg) scale(1.15);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
+  border-color: #ef4444;
+}
+
+.close-image-section i {
+  font-size: 18px;
+  color: #6b7280;
+  transition: color 0.3s ease;
+  font-weight: bold;
+}
+
+.close-image-section:hover i {
+  color: #ef4444;
+}
+
 /* 步骤覆盖层 */
 .steps-overlay {
   width: 100%;
   padding: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/deep/ .steps-overlay .el-steps {
-  padding: 20px;
+/* 现代化步骤条 */
+.modern-steps {
+  width: 100%;
+  max-width: 400px;
+}
+
+.step-item {
+  display: flex;
+  gap: 20px;
+  position: relative;
+  padding-bottom: 32px;
+}
+
+.step-item:last-child {
+  padding-bottom: 0;
+}
+
+.step-icon-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.step-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+
+/* 等待状态 */
+.step-waiting .step-icon {
+  background: #f3f4f6;
+  color: #9ca3af;
+  border: 2px solid #e5e7eb;
+}
+
+/* 激活状态 */
+.step-active .step-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  border: none;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* 完成状态 */
+.step-completed .step-icon {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: none;
+  transform: scale(1.05);
+}
+
+.step-line {
+  width: 2px;
+  height: 32px;
+  margin-top: 8px;
+  transition: all 0.3s ease;
+}
+
+.step-waiting .step-line {
+  background: #e5e7eb;
+}
+
+.step-active .step-line,
+.step-completed .step-line {
+  background: linear-gradient(180deg, #667eea 0%, #10b981 100%);
+}
+
+.step-content {
+  flex: 1;
+  padding-top: 8px;
+}
+
+.step-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  transition: all 0.3s ease;
+}
+
+.step-waiting .step-title {
+  color: #9ca3af;
+}
+
+.step-active .step-title {
+  color: #667eea;
+  font-weight: 700;
+}
+
+.step-completed .step-title {
+  color: #10b981;
+}
+
+.step-description {
+  font-size: 14px;
+  line-height: 1.6;
+  letter-spacing: 0.3px;
+  transition: all 0.3s ease;
+}
+
+.step-waiting .step-description {
+  color: #d1d5db;
+}
+
+.step-active .step-description {
+  color: #6b7280;
+}
+
+.step-completed .step-description {
+  color: #9ca3af;
+}
+
+/* 脉冲动画 */
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.6), 0 0 0 8px rgba(102, 126, 234, 0.1);
+  }
+}
+
+/* 关键词展示区 */
+.keyword-display {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+  animation: slideInDown 0.5s ease-out;
+}
+
+.keyword-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.keyword-content {
+  font-size: 15px;
+  line-height: 1.8;
+  color: #ffffff;
+  word-wrap: break-word;
+  word-break: break-word;
+  letter-spacing: 0.4px;
+  font-weight: 400;
 }
 
 /* 图片包装器 */
@@ -501,22 +1068,111 @@ export default {
   width: 100%;
   height: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 24px;
+  position: relative;
 }
 
 .display-image {
   max-width: 100%;
-  max-height: 100%;
+  max-height: calc(100% - 60px);
   object-fit: contain;
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   transition: transform 0.3s ease;
+  animation: fadeIn 0.5s ease-out;
 }
 
 .display-image:hover {
   transform: scale(1.02);
+}
+
+/* 图片操作按钮 */
+.image-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 12px;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.image-actions .el-button {
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.image-actions .el-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
+.image-actions .el-button:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.image-actions .el-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+.image-actions .el-button:active {
+  transform: translateY(-1px);
+}
+
+.image-actions .el-button i {
+  margin-right: 6px;
+  font-size: 16px;
+}
+
+/* 动画效果 */
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* 图片空状态 */
@@ -538,6 +1194,8 @@ export default {
 .image-empty-state p {
   font-size: 16px;
   margin: 0;
+  letter-spacing: 0.5px;
+  font-weight: 400;
 }
 
 /* 加载覆盖层 */
@@ -564,8 +1222,9 @@ export default {
 }
 
 .loading-overlay p {
-  font-size: 15px;
+  font-size: 16px;
   color: #667eea;
+  letter-spacing: 0.5px;
   font-weight: 500;
   margin: 0;
 }
