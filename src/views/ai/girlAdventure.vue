@@ -42,6 +42,15 @@
             >
               生成图片
             </el-button>
+            <el-button
+              v-if="(imageUrl || isGeneratingKeywords || isGeneratingImage) && !showImageSection"
+              size="small"
+              icon="el-icon-picture-outline"
+              type="success"
+              @click="openImageSection"
+            >
+              {{ (isGeneratingKeywords || isGeneratingImage) ? '查看生成进度' : '查看图片' }}
+            </el-button>
           </div>
         </div>
 
@@ -437,6 +446,11 @@ export default {
     closeImageSection() {
       // 关闭图片区域
       this.showImageSection = false;
+    },
+
+    openImageSection() {
+      // 打开图片区域
+      this.showImageSection = true;
     }
   }
 };
