@@ -67,7 +67,7 @@
                 icon="el-icon-s-promotion"
                 @click="askQuestion"
                 :loading="isLoading"
-                :disabled="isLoading"
+                :disabled="isLoading || !question.trim()"
               ></el-button>
             </template>
           </el-input>
@@ -224,6 +224,10 @@ export default {
     },
     async askQuestion() {
       if (this.isLoading) return; // 如果已经在加载中，不重复请求
+      if (!this.question.trim()) {
+        this.$message.warning('请输入问题后再发送');
+        return;
+      }
       this.isResponseComplete = false;
       // 不立即清空，等待新内容加载
       const oldResponse = this.response; // 保存旧内容
