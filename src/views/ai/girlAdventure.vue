@@ -77,8 +77,29 @@
       <!-- 右侧图片区 -->
       <div v-if="showImageSection" class="image-section">
         <!-- 关键词展示区 -->
-        <div v-if="keyWord && imageUrl" class="keyword-display">
-          <div class="keyword-label">生成关键词</div>
+        <div v-if="keyWord" class="keyword-display">
+          <div class="keyword-header">
+            <div class="keyword-label">生成关键词</div>
+            <div class="keyword-actions">
+              <el-button
+                v-if="!isGeneratingKeywords && !isGeneratingImage"
+                size="mini"
+                icon="el-icon-picture"
+                class="generate-image-btn"
+                @click="generateImageFromKeyword"
+                title="根据关键词生成图片"
+              >生成图片</el-button>
+              <el-button
+                v-if="!isGeneratingKeywords"
+                size="mini"
+                icon="el-icon-refresh"
+                circle
+                class="regenerate-btn"
+                @click="regenerateKeyword"
+                title="重新生成关键词"
+              ></el-button>
+            </div>
+          </div>
           <div class="keyword-content">{{ keyWord }}</div>
         </div>
 
@@ -451,6 +472,53 @@ export default {
     openImageSection() {
       // 打开图片区域
       this.showImageSection = true;
+    },
+
+    async regenerateKeyword() {
+      // 清空图片和关键词
+      this.imageUrl = '';
+      this.keyWord = '';
+
+      // 显示步骤条并重置状态
+      this.showSteps = true;
+      this.currentStep = 0;
+
+      this.isGeneratingKeywords = true;
+      this.currentStep = 1;
+
+      const body = {
+        model: 'makeKey',
+        message: this.response,
+        aiMenuCode: this.aiMenuId
+      };
+
+      try {
+        await this.fetchStream(body, (decodedValue) => {
+          this.keyWord += decodedValue;
+        }, () => {
+          this.currentStep = 2;
+          this.showSteps = false;
+          this.$message.success('关键词重新生成成功');
+        });
+      } catch (error) {
+        this.currentStep = 0;
+        this.showSteps = false;
+        this.$message.error('关键词生成失败，请重试');
+      } finally {
+        this.isGeneratingKeywords = false;
+      }
+    },
+
+    async generateImageFromKeyword() {
+      // 清空之前的图片
+      this.imageUrl = '';
+
+      // 显示步骤条
+      this.showSteps = true;
+      this.currentStep = 2;
+
+      // 直接调用文字转图片方法
+      await this.textToImage();
     }
   }
 };
@@ -1058,13 +1126,64 @@ export default {
   animation: slideInDown 0.5s ease-out;
 }
 
+.keyword-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
 .keyword-label {
   font-size: 12px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+.keyword-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.generate-image-btn {
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: #ffffff;
+  transition: all 0.3s ease;
+  font-size: 12px;
+  padding: 8px 12px;
+  height: auto;
+}
+
+.generate-image-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.7);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.generate-image-btn:active {
+  transform: translateY(0);
+}
+
+.regenerate-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+  transition: all 0.3s ease;
+  padding: 8px;
+}
+
+.regenerate-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: rotate(180deg);
+}
+
+.regenerate-btn:active {
+  transform: rotate(180deg) scale(0.95);
 }
 
 .keyword-content {
