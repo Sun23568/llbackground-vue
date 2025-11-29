@@ -8,7 +8,7 @@
         </div>
 
         <div class="chat-body">
-          <SimpleBar class="response-scrollbar">
+          <SimpleBar class="response-scrollbar" ref="responseScrollbar" data-simplebar-auto-hide="false">
             <div class="response-area" id="response">
               <div v-if="!response && !isLoading" class="empty-state">
                 <i class="el-icon-chat-dot-round"></i>
@@ -36,14 +36,17 @@
               size="small"
               icon="el-icon-picture"
               type="primary"
-              :disabled="isGeneratingKeywords || isGeneratingImage"
+              :disabled="isLoading || isGeneratingKeywords || isGeneratingImage"
               :loading="isGeneratingKeywords || isGeneratingImage"
               @click="generateImage"
             >
               生成图片
             </el-button>
+          </div>
+
+          <!-- 打开图片按钮 - 独立显示，不受 isResponseComplete 限制 -->
+          <div v-if="(imageUrl || isGeneratingKeywords || isGeneratingImage) && !showImageSection" class="open-image-button">
             <el-button
-              v-if="(imageUrl || isGeneratingKeywords || isGeneratingImage) && !showImageSection"
               size="small"
               icon="el-icon-picture-outline"
               type="success"
@@ -197,6 +200,7 @@ export default {
       showSteps: false,     // 控制步骤条显示
       currentStep: 0,       // 当前步骤
       showImageSection: false, // 控制右侧图片区域显示
+      scrollUpdateTimer: null, // 滚动更新定时器
       steps: [
         { title: '开始生成', description: '准备生成图片' },
         { title: '提取关键词', description: 'AI分析内容关键信息' },
@@ -208,6 +212,11 @@ export default {
   mounted() {
     // 加载背景图
     this.fetchBackground();
+
+    // 初始化滚动条
+    this.$nextTick(() => {
+      this.updateScrollbar();
+    });
   },
   methods: {
     async fetchBackground() {
@@ -251,6 +260,8 @@ export default {
           body,
           (decodedValue) => {
             this.response += decodedValue;
+            // 每次更新内容后，更新滚动条并滚动到底部（节流）
+            this.throttledUpdateScrollbar();
           },
           () => {
             this.chatList.push(this.question);
@@ -261,6 +272,11 @@ export default {
             this.isResponseComplete = true;
             this.question = ''; // 清空提问框内容
             this.lastQuestion = this.chatList[this.chatList.length - 1].question; // 存储上一次的问题
+
+            // 最后确保滚动条更新到最终状态
+            this.$nextTick(() => {
+              this.updateScrollbar();
+            });
           }
         );
       } catch (error) {
@@ -318,6 +334,11 @@ export default {
       this.response = '';
       this.imageUrl = ''; // 清空图片URL
       this.keyWord = ''; // 清空关键词
+      this.isResponseComplete = false;
+      // 更新滚动条
+      this.$nextTick(() => {
+        this.updateScrollbar();
+      });
     },
 
     async generateImage() {
@@ -523,6 +544,55 @@ export default {
 
       // 直接调用文字转图片方法
       await this.textToImage();
+    },
+
+    throttledUpdateScrollbar() {
+      // 节流更新滚动条，避免过于频繁的更新
+      if (this.scrollUpdateTimer) {
+        clearTimeout(this.scrollUpdateTimer);
+      }
+      this.scrollUpdateTimer = setTimeout(() => {
+        this.updateScrollbar();
+      }, 100); // 每100ms最多更新一次
+    },
+
+    updateScrollbar() {
+      // 更新SimpleBar滚动条并滚动到底部
+      this.$nextTick(() => {
+        if (this.$refs.responseScrollbar) {
+          // 尝试多种方式访问SimpleBar实例
+          let scrollbarInstance = null;
+
+          // 方式1: 通过 simpleBar 属性
+          if (this.$refs.responseScrollbar.simpleBar) {
+            scrollbarInstance = this.$refs.responseScrollbar.simpleBar;
+          }
+          // 方式2: 通过 $el.SimpleBar
+          else if (this.$refs.responseScrollbar.$el && this.$refs.responseScrollbar.$el.SimpleBar) {
+            scrollbarInstance = this.$refs.responseScrollbar.$el.SimpleBar;
+          }
+          // 方式3: 直接是SimpleBar实例
+          else if (this.$refs.responseScrollbar.SimpleBar) {
+            scrollbarInstance = this.$refs.responseScrollbar.SimpleBar;
+          }
+
+          if (scrollbarInstance) {
+            // 重新计算滚动条
+            scrollbarInstance.recalculate();
+            // 滚动到底部
+            const scrollElement = scrollbarInstance.getScrollElement();
+            if (scrollElement) {
+              scrollElement.scrollTop = scrollElement.scrollHeight;
+            }
+          } else {
+            // 备选方案：直接操作DOM
+            const contentEl = document.querySelector('.response-scrollbar .simplebar-content-wrapper');
+            if (contentEl) {
+              contentEl.scrollTop = contentEl.scrollHeight;
+            }
+          }
+        }
+      });
     }
   }
 };
@@ -592,6 +662,8 @@ export default {
   border-radius: 20px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.5);
   overflow: hidden;
+  height: 100%;
+  min-height: 0;
 }
 
 /* 聊天头部 */
@@ -646,21 +718,48 @@ export default {
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  min-height: 0;
 }
 
 .response-scrollbar {
   flex: 1;
-  overflow: hidden;
   max-height: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+/deep/ .response-scrollbar .simplebar-wrapper {
+  height: 100%;
+}
+
+/deep/ .response-scrollbar .simplebar-height-auto-observer-wrapper {
+  height: 100%;
+}
+
+/deep/ .response-scrollbar .simplebar-mask {
+  height: 100%;
+}
+
+/deep/ .response-scrollbar .simplebar-offset {
+  height: 100%;
+}
+
+/deep/ .response-scrollbar .simplebar-content-wrapper {
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /deep/ .response-scrollbar .simplebar-content {
   padding: 24px;
   min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .response-area {
-  min-height: 100%;
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
@@ -784,7 +883,18 @@ export default {
   animation: slideInUp 0.4s ease-out;
 }
 
-.action-buttons .el-button {
+/* 打开图片按钮 - 独立容器样式 */
+.open-image-button {
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  background: linear-gradient(to bottom, #fafafa 0%, #ffffff 100%);
+  animation: slideInUp 0.4s ease-out;
+}
+
+.action-buttons .el-button,
+.open-image-button .el-button {
   border-radius: 8px;
   font-weight: 500;
   transition: all 0.3s ease;
@@ -792,7 +902,8 @@ export default {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.action-buttons .el-button:hover {
+.action-buttons .el-button:hover,
+.open-image-button .el-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border-color: #667eea;
@@ -806,6 +917,16 @@ export default {
 
 .action-buttons .el-button--primary:hover {
   box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+}
+
+.open-image-button .el-button--success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: none;
+  color: white;
+}
+
+.open-image-button .el-button--success:hover {
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
 }
 
 /* 输入区 */
@@ -1399,14 +1520,37 @@ export default {
 }
 
 /* 自定义滚动条 */
-/deep/ .simplebar-scrollbar::before {
-  background-color: #cbd5e1;
+/deep/ .response-scrollbar .simplebar-scrollbar::before {
+  background-color: #667eea;
+  border-radius: 4px;
+  opacity: 0.8;
+}
+
+/deep/ .response-scrollbar .simplebar-scrollbar.simplebar-visible::before {
+  opacity: 1;
+}
+
+/deep/ .response-scrollbar .simplebar-track {
+  background-color: rgba(0, 0, 0, 0.05);
   border-radius: 4px;
 }
 
-/deep/ .simplebar-track.simplebar-vertical {
-  width: 6px;
-  right: 4px;
+/deep/ .response-scrollbar .simplebar-track.simplebar-vertical {
+  width: 8px;
+  right: 2px;
+  top: 2px;
+  bottom: 2px;
+}
+
+/deep/ .response-scrollbar .simplebar-scrollbar {
+  right: 0;
+  width: 8px;
+}
+
+/* 确保滚动条始终显示 */
+/deep/ .response-scrollbar .simplebar-track.simplebar-vertical {
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 /* 响应式 */
