@@ -97,8 +97,15 @@ export const asyncRouterMap = [
         path: 'access',
         name: '授权管理',
         component: _import('user/access'),
-        meta: { title: '授权管理', icon: 'password' },
+        meta: { title: '授权管理', icon: 'access' },
         menu: 'access'
+      },
+      {
+        path: 'upload',
+        name: '文件上传',
+        component: _import('file/FileUpload'),
+        meta: { title: '文件上传', icon: 'upload-file' },
+        menu: 'fileUpload'
       }
     ]
   }
