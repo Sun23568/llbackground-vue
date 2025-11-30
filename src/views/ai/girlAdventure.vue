@@ -201,6 +201,7 @@ export default {
       currentStep: 0,       // 当前步骤
       showImageSection: false, // 控制右侧图片区域显示
       scrollUpdateTimer: null, // 滚动更新定时器
+      keywordMap: {}, // 新增: 存储结构化的关键词对象
       steps: [
         { title: '开始生成', description: '准备生成图片' },
         { title: '提取关键词', description: 'AI分析内容关键信息' },
@@ -334,6 +335,7 @@ export default {
       this.response = '';
       this.imageUrl = ''; // 清空图片URL
       this.keyWord = ''; // 清空关键词
+      this.keywordMap = {}; // 清空关键词Map
       this.isResponseComplete = false;
       // 更新滚动条
       this.$nextTick(() => {
@@ -351,9 +353,21 @@ export default {
       this.isGeneratingKeywords = true;
       this.currentStep = 1;
 
+      // 构建上下文：如果之前已经有关键词，将其作为上下文传递
+      const context = [];
+      if (Object.keys(this.keywordMap).length > 0) {
+        // 将现有的关键词Map转换为文本
+        const currentKeywords = Object.entries(this.keywordMap)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join('\n');
+        context.push('当前角色状态关键词：\n' + currentKeywords);
+        context.push('好的，我会根据新对话更新相应的关键词。');
+      }
+
       const body = {
         model: 'makeKey',
         message: this.response,
+        context: context,
         aiMenuCode: this.aiMenuId
       };
 
@@ -362,6 +376,8 @@ export default {
         await this.fetchStream(body, (decodedValue) => {
           this.keyWord += decodedValue;
         }, () => {
+          // 解析并更新keywordMap
+          this.parseAndUpdateKeywords(this.keyWord);
           this.currentStep = 2;
           this.textToImage();
         });
@@ -374,12 +390,14 @@ export default {
 
     async textToImage() {
       this.isGeneratingImage = true;
+      // 将keywordMap转换为最终的关键词字符串
+      const finalKeywords = Object.values(this.keywordMap).join(', ');
       const response = await fetch(`/api/ai/generate-image`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json;charset=UTF-8',
         },
-        body: JSON.stringify({ keyWord: this.keyWord, aiMenuCode: this.aiMenuId })
+        body: JSON.stringify({ keyWord: finalKeywords, aiMenuCode: this.aiMenuId })
       });
       const reader = response.body.getReader();
       let done = false;
@@ -544,6 +562,34 @@ export default {
 
       // 直接调用文字转图片方法
       await this.textToImage();
+    },
+
+    parseAndUpdateKeywords(text) {
+      // 解析AI返回的结构化关键词文本，格式如：
+      // 衣服: red dress
+      // 裤子: green pants
+      // 发型: long black hair
+      const lines = text.split('\n');
+      lines.forEach(line => {
+        const trimmedLine = line.trim();
+        if (trimmedLine) {
+          // 尝试匹配 "key: value" 或 "key：value" 格式
+          const match = trimmedLine.match(/^([^:：]+)[：:](.+)$/);
+          if (match) {
+            const key = match[1].trim();
+            const value = match[2].trim();
+            if (key && value) {
+              // 更新或添加关键词
+              this.keywordMap[key] = value;
+            }
+          }
+        }
+      });
+
+      // 如果解析失败（没有找到结构化格式），直接使用原文本
+      if (Object.keys(this.keywordMap).length === 0 && text.trim()) {
+        this.keywordMap['默认'] = text.trim();
+      }
     },
 
     throttledUpdateScrollbar() {
