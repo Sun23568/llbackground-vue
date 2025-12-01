@@ -44,6 +44,18 @@
             </el-button>
           </div>
 
+          <!-- 对话生成时的取消按钮 -->
+          <div v-if="isLoading && !isResponseComplete" class="action-buttons">
+            <el-button
+              size="small"
+              type="danger"
+              icon="el-icon-close"
+              @click="cancelGeneration"
+            >
+              取消对话
+            </el-button>
+          </div>
+
           <!-- 打开图片按钮 - 独立显示，不受 isResponseComplete 限制 -->
           <div v-if="(imageUrl || isGeneratingKeywords || isGeneratingImage) && !showImageSection" class="open-image-button">
             <el-button
@@ -138,6 +150,17 @@
                 </div>
               </div>
             </div>
+            <!-- 取消按钮 -->
+            <div class="cancel-generation-wrapper">
+              <el-button
+                type="danger"
+                size="small"
+                icon="el-icon-close"
+                @click="cancelGeneration"
+              >
+                取消生成
+              </el-button>
+            </div>
           </div>
 
           <!-- 图片展示 -->
@@ -202,6 +225,7 @@ export default {
       showImageSection: false, // 控制右侧图片区域显示
       scrollUpdateTimer: null, // 滚动更新定时器
       keywordMap: {}, // 新增: 存储结构化的关键词对象
+      abortController: null, // 用于取消请求
       steps: [
         { title: '开始生成', description: '准备生成图片' },
         { title: '提取关键词', description: 'AI分析内容关键信息' },
@@ -248,6 +272,7 @@ export default {
       }
 
       this.isLoading = true; // 设置加载状态
+      this.abortController = new AbortController(); // 创建取消控制器
 
       const body = {
         message: this.question,
@@ -278,23 +303,43 @@ export default {
             this.$nextTick(() => {
               this.updateScrollbar();
             });
-          }
+          },
+          this.abortController.signal
         );
       } catch (error) {
+        if (error.name === 'AbortError') {
+          this.$message.info('已取消对话生成');
+        } else {
+          this.$message.error('对话生成失败，请重试');
+        }
         this.isLoading = false;
         this.isResponseComplete = true;
         this.question = ''; // 清空提问框内容
+      } finally {
+        this.abortController = null;
       }
     },
-    async fetchStream(body, onDataReceived, onComplete) {
+    async fetchStream(body, onDataReceived, onComplete, signal = null) {
       try {
-        const response = await fetch('/api/ai/chat', {
+        const fetchOptions = {
           method: 'POST',
           headers: {
             'Content-Type': 'application/stream+json;charset=utf-8'
           },
           body: JSON.stringify(body)
-        });
+        };
+
+        // 如果提供了 signal，添加到 fetch 选项中
+        if (signal) {
+          fetchOptions.signal = signal;
+        }
+
+        const response = await fetch('/api/ai/chat', fetchOptions);
+
+        // 检查响应状态
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
         // 获取响应体的可读流
         const reader = response.body.getReader();
@@ -352,6 +397,7 @@ export default {
 
       this.isGeneratingKeywords = true;
       this.currentStep = 1;
+      this.abortController = new AbortController(); // 创建取消控制器
 
       // 构建上下文：如果之前已经有关键词，将其作为上下文传递
       const context = [];
@@ -381,9 +427,14 @@ export default {
           this.parseAndUpdateKeywords(this.keyWord);
           this.currentStep = 2;
           this.textToImage();
-        });
+        }, this.abortController.signal);
       } catch (error) {
-        this.currentStep = 0;
+        if (error.name === 'AbortError') {
+          this.$message.info('已取消图片生成');
+        } else {
+          this.$message.error('关键词生成失败，请重试');
+        }
+        this.resetGenerationState();
       } finally {
         this.isGeneratingKeywords = false;
       }
@@ -391,39 +442,64 @@ export default {
 
     async textToImage() {
       this.isGeneratingImage = true;
-      // 将keywordMap转换为最终的关键词字符串
-      const finalKeywords = Object.values(this.keywordMap).join(', ');
-      const response = await fetch(`/api/ai/generate-image`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json;charset=UTF-8',
-        },
-        body: JSON.stringify({ keyWord: finalKeywords, aiMenuCode: this.aiMenuId })
-      });
-      const reader = response.body.getReader();
-      let done = false;
-      let url = '';
-      let buildParamEnd = false;
+      try {
+        // 将keywordMap转换为最终的关键词字符串
+        const finalKeywords = Object.values(this.keywordMap).join(', ');
 
-      while (!done) {
-        const { value, done: doneReading } = await reader.read();
-        done = doneReading;
-        // 解码
-        if (value) {
-          const decodedValue = new TextDecoder().decode(value);
+        const fetchOptions = {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json;charset=UTF-8',
+          },
+          body: JSON.stringify({ keyWord: finalKeywords, aiMenuCode: this.aiMenuId })
+        };
 
-          if (!buildParamEnd) {
-            this.currentStep = 3;
-            buildParamEnd = true;
-          } else {
-            url = decodedValue;
+        // 添加 abort signal
+        if (this.abortController) {
+          fetchOptions.signal = this.abortController.signal;
+        }
+
+        const response = await fetch(`/api/ai/generate-image`, fetchOptions);
+
+        // 检查响应状态
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        let done = false;
+        let url = '';
+        let buildParamEnd = false;
+
+        while (!done) {
+          const { value, done: doneReading } = await reader.read();
+          done = doneReading;
+          // 解码
+          if (value) {
+            const decodedValue = new TextDecoder().decode(value);
+
+            if (!buildParamEnd) {
+              this.currentStep = 3;
+              buildParamEnd = true;
+            } else {
+              url = decodedValue;
+            }
           }
         }
+        this.imageUrl = url;
+        this.currentStep = 4;
+        this.showSteps = false;
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          this.$message.info('已取消图片生成');
+        } else {
+          this.$message.error('图片生成失败，请重试');
+        }
+        this.resetGenerationState();
+      } finally {
+        this.isGeneratingImage = false;
+        this.abortController = null;
       }
-      this.imageUrl = url;
-      this.isGeneratingImage = false;
-      this.currentStep = 4;
-      this.showSteps = false;
     },
 
     async downloadImage() {
@@ -523,6 +599,7 @@ export default {
       // 清空图片和关键词
       this.imageUrl = '';
       this.keyWord = '';
+      this.keywordMap = {}; // 清空关键词Map
 
       // 显示步骤条并重置状态
       this.showSteps = true;
@@ -530,6 +607,7 @@ export default {
 
       this.isGeneratingKeywords = true;
       this.currentStep = 1;
+      this.abortController = new AbortController(); // 创建取消控制器
 
       const body = {
         model: 'makeKey',
@@ -541,16 +619,22 @@ export default {
         await this.fetchStream(body, (decodedValue) => {
           this.keyWord += decodedValue;
         }, () => {
+          // 解析新的关键词
+          this.parseAndUpdateKeywords(this.keyWord);
           this.currentStep = 2;
           this.showSteps = false;
           this.$message.success('关键词重新生成成功');
-        });
+        }, this.abortController.signal);
       } catch (error) {
-        this.currentStep = 0;
-        this.showSteps = false;
-        this.$message.error('关键词生成失败，请重试');
+        if (error.name === 'AbortError') {
+          this.$message.info('已取消关键词生成');
+        } else {
+          this.$message.error('关键词生成失败，请重试');
+        }
+        this.resetGenerationState();
       } finally {
         this.isGeneratingKeywords = false;
+        this.abortController = null;
       }
     },
 
@@ -561,6 +645,7 @@ export default {
       // 显示步骤条
       this.showSteps = true;
       this.currentStep = 2;
+      this.abortController = new AbortController(); // 创建取消控制器
 
       // 直接调用文字转图片方法
       await this.textToImage();
@@ -592,6 +677,26 @@ export default {
       if (Object.keys(this.keywordMap).length === 0 && text.trim()) {
         this.keywordMap['默认'] = text.trim();
       }
+    },
+
+    // 重置生成状态
+    resetGenerationState() {
+      this.isGeneratingKeywords = false;
+      this.isGeneratingImage = false;
+      this.showSteps = false;
+      this.currentStep = 0;
+      if (this.abortController) {
+        this.abortController = null;
+      }
+    },
+
+    // 取消生成
+    cancelGeneration() {
+      if (this.abortController) {
+        this.abortController.abort();
+        this.abortController = null;
+      }
+      this.resetGenerationState();
     },
 
     throttledUpdateScrollbar() {
@@ -1154,8 +1259,10 @@ export default {
   width: 100%;
   padding: 40px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 24px;
 }
 
 /* 现代化步骤条 */
@@ -1287,6 +1394,32 @@ export default {
   50% {
     box-shadow: 0 4px 20px rgba(102, 126, 234, 0.6), 0 0 0 8px rgba(102, 126, 234, 0.1);
   }
+}
+
+/* 取消生成按钮容器 */
+.cancel-generation-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.cancel-generation-wrapper .el-button {
+  border-radius: 10px;
+  padding: 12px 32px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.cancel-generation-wrapper .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+}
+
+.cancel-generation-wrapper .el-button:active {
+  transform: translateY(0);
 }
 
 /* 关键词展示区 */
