@@ -409,11 +409,12 @@ export default {
         done = doneReading;
         // 解码
         if (value) {
+          const decodedValue = new TextDecoder().decode(value);
+
           if (!buildParamEnd) {
             this.currentStep = 3;
             buildParamEnd = true;
           } else {
-            const decodedValue = new TextDecoder().decode(value);
             url = decodedValue;
           }
         }
