@@ -209,6 +209,7 @@ export default {
       aiMenuId: 'girlAdventure',
       contextSize: 5,
       backgroundImageUrl: '',
+      initialCharacterState: null, // 初始人物状态配置
       question: '',
       response: '',
       chatList: [],
@@ -252,6 +253,8 @@ export default {
         });
         this.backgroundImageUrl = response.backgroundImage;
         this.contextSize = response.contextSize;
+        // 加载初始人物状态配置（纯文本）
+        this.initialCharacterState = response.initialCharacterState || null;
       } catch (error) {
         console.error('加载背景图片失败', error);
       }
@@ -274,9 +277,17 @@ export default {
       this.isLoading = true; // 设置加载状态
       this.abortController = new AbortController(); // 创建取消控制器
 
+      // 构建上下文：如果是第一次对话且有初始人物状态，添加到上下文中
+      let contextList = [...this.chatList];
+      if (contextList.length === 0 && this.initialCharacterState) {
+        // 第一次对话，添加初始人物状态作为系统提示
+        contextList.push('系统提示：当前角色的初始状态如下：\n' + this.initialCharacterState);
+        contextList.push('好的，我会记住这个角色的初始状态，并在对话中保持一致。');
+      }
+
       const body = {
         message: this.question,
-        context: this.chatList,
+        context: contextList,
         model: 'luoli',
         aiMenuCode: this.aiMenuId
       };
@@ -408,6 +419,10 @@ export default {
           .join('\n');
         context.push('当前角色状态关键词：\n' + currentKeywords);
         context.push('好的，我会根据新对话更新相应的关键词。');
+      } else if (this.initialCharacterState) {
+        // 首次生成：使用初始人物状态配置（纯文本）
+        context.push('初始角色状态关键词：\n' + this.initialCharacterState);
+        context.push('好的，我会基于这个初始状态生成关键词。');
       }
 
       const body = {
