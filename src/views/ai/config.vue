@@ -120,7 +120,7 @@
     <el-dialog
       :title="textMap[dialogStatus]"
       :visible.sync="dialogFormVisible"
-      width="650px"
+      width="700px"
       :close-on-click-modal="false"
       class="modern-dialog">
       <el-form
@@ -242,6 +242,61 @@
             </div>
           </el-form-item>
         </div>
+
+        <!-- 初始人物状态配置 -->
+        <div class="form-section">
+          <div class="section-title">
+            <i class="el-icon-user"></i>
+            初始人物状态
+            <span class="section-subtitle">（用于AI首次生成时的初始提示词）</span>
+          </div>
+
+          <!-- 输入描述区域 -->
+          <el-form-item label="人物描述">
+            <el-input
+              type="textarea"
+              v-model="characterDescription"
+              :rows="3"
+              placeholder="请描述人物的外观特征，如：一位银发双马尾的少女，蓝色眼睛，穿着白色校服衬衫和蓝色短裙，黑色过膝袜，白色运动鞋"
+              :disabled="isGeneratingCharacterKeywords">
+            </el-input>
+          </el-form-item>
+
+          <!-- 生成按钮 -->
+          <div class="character-actions">
+            <el-button
+              size="small"
+              type="primary"
+              icon="el-icon-magic-stick"
+              :loading="isGeneratingCharacterKeywords"
+              :disabled="!characterDescription.trim() || isGeneratingCharacterKeywords"
+              @click="generateCharacterKeywords">
+              {{ isGeneratingCharacterKeywords ? '生成中...' : 'AI生成关键词' }}
+            </el-button>
+            <el-button
+              size="small"
+              icon="el-icon-delete"
+              @click="clearCharacterState"
+              :disabled="isGeneratingCharacterKeywords">
+              清空全部
+            </el-button>
+          </div>
+
+          <!-- 生成的关键词显示和编辑区域 -->
+          <el-form-item label="生成的关键词（可直接编辑）">
+            <el-input
+              type="textarea"
+              v-model="initialCharacterState"
+              :rows="5"
+              placeholder="AI生成的关键词将显示在这里，您也可以直接编辑"
+              :disabled="isGeneratingCharacterKeywords">
+            </el-input>
+            <div class="keyword-tips">
+              <i class="el-icon-info"></i>
+              <span>格式示例：发色: long silver hair, 面部: blue eyes, smile, 上身: white shirt, 下身: blue skirt</span>
+            </div>
+          </el-form-item>
+        </div>
       </el-form>
 
       <div slot="footer" class="dialog-footer">
@@ -322,6 +377,9 @@ export default {
         backgroundImage: '',
         contextSize: 1024
       },
+      characterDescription: '', // 人物描述文本
+      initialCharacterState: '', // 初始人物状态关键词（文本）
+      isGeneratingCharacterKeywords: false, // 是否正在生成关键词
       formRules: {
         menuName: [
           { required: true, message: '请输入菜单名称', trigger: 'blur' }
@@ -361,6 +419,8 @@ export default {
         backgroundImage: '',
         contextSize: 1024
       };
+      this.characterDescription = '';
+      this.initialCharacterState = '';
       this.dialogStatus = 'create';
       this.dialogFormVisible = true;
       this.$nextTick(() => {
@@ -372,6 +432,8 @@ export default {
 
     showEdit(row) {
       this.tempConfigForm = { ...row };
+      this.characterDescription = '';
+      this.initialCharacterState = row.initialCharacterState || '';
       this.dialogStatus = 'update';
       this.dialogFormVisible = true;
       this.$nextTick(() => {
@@ -394,10 +456,12 @@ export default {
           if (submitData.backgroundImage) {
             submitData.backgroundImage = this.getImageName(submitData.backgroundImage);
           }
+          // 添加初始人物状态
+          submitData.initialCharacterState = this.initialCharacterState || null;
           this.api({
             url: "/ai/config/add",
             method: "post",
-            data: this.tempConfigForm
+            data: submitData
           }).then(() => {
             this.dialogFormVisible = false;
             this.$message({
@@ -421,6 +485,8 @@ export default {
           if (submitData.backgroundImage) {
             submitData.backgroundImage = this.getImageName(submitData.backgroundImage);
           }
+          // 添加初始人物状态
+          submitData.initialCharacterState = this.initialCharacterState || null;
           this.api({
             url: "/ai/config/update",
             method: "post",
@@ -495,6 +561,80 @@ export default {
       if (!url) return '';
       const parts = url.split('/');
       return parts[parts.length - 1] || '背景图片';
+    },
+
+    // 生成人物关键词
+    async generateCharacterKeywords() {
+      if (!this.characterDescription.trim()) {
+        this.$message.warning('请先输入人物描述');
+        return;
+      }
+
+      this.isGeneratingCharacterKeywords = true;
+      this.initialCharacterState = ''; // 清空旧内容，准备接收新内容
+
+      const body = {
+        model: 'makeKey',
+        message: this.characterDescription,
+        context: [],
+        aiMenuCode: this.tempConfigForm.menuCode || 'girlAdventure'
+      };
+
+      try {
+        await this.fetchStream(body, (decodedValue) => {
+          // 实时追加生成的内容
+          this.initialCharacterState += decodedValue;
+        }, () => {
+          this.$message.success('关键词生成成功，您可以直接编辑');
+        });
+      } catch (error) {
+        this.$message.error('关键词生成失败，请重试');
+      } finally {
+        this.isGeneratingCharacterKeywords = false;
+      }
+    },
+
+    // fetchStream 方法（用于流式请求）
+    async fetchStream(body, onDataReceived, onComplete) {
+      try {
+        const response = await fetch('/api/ai/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/stream+json;charset=utf-8'
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) {
+            if (onComplete) {
+              onComplete();
+            }
+            break;
+          }
+
+          const decodedValue = decoder.decode(value, { stream: true });
+          if (onDataReceived) {
+            onDataReceived(decodedValue);
+          }
+        }
+      } catch (error) {
+        throw error;
+      }
+    },
+
+    // 清空人物状态
+    clearCharacterState() {
+      this.characterDescription = '';
+      this.initialCharacterState = '';
     }
   }
 }
@@ -711,7 +851,7 @@ export default {
 
 .modern-dialog >>> .el-dialog__body {
   padding: 24px;
-  max-height: 600px;
+  max-height: 70vh;
   overflow-y: auto;
 }
 
@@ -743,6 +883,36 @@ export default {
 
 .section-title i {
   color: #409eff;
+}
+
+.section-subtitle {
+  font-size: 12px;
+  font-weight: 400;
+  color: #909399;
+  margin-left: 8px;
+}
+
+/* 人物状态配置样式 */
+.character-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.keyword-tips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #f0f9ff;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #0369a1;
+}
+
+.keyword-tips i {
+  font-size: 14px;
 }
 
 .config-form >>> .el-form-item__label {
