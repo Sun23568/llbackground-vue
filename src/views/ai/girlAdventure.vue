@@ -373,6 +373,7 @@ export default {
 
       try {
         this.keyWord = '';
+        this.keywordMap = {}; // 清空旧的关键词Map，确保完全使用新关键词
         await this.fetchStream(body, (decodedValue) => {
           this.keyWord += decodedValue;
         }, () => {
