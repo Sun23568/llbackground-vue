@@ -226,6 +226,7 @@ export default {
       showImageSection: false, // 控制右侧图片区域显示
       scrollUpdateTimer: null, // 滚动更新定时器
       keywordMap: {}, // 新增: 存储结构化的关键词对象
+      previousKeywordMap: {}, // 新增: 存储上一次成功生成的关键词（用于重新生成时的基础）
       abortController: null, // 用于取消请求
       steps: [
         { title: '开始生成', description: '准备生成图片' },
@@ -268,6 +269,7 @@ export default {
       this.isResponseComplete = false;
       // 不立即清空，等待新内容加载
       const oldResponse = this.response; // 保存旧内容
+      const currentQuestion = this.question; // 保存当前问题，以便错误时恢复
       this.response = ''; // 准备接收新内容
 
       if (this.chatList.length > this.contextSize) {
@@ -286,11 +288,13 @@ export default {
       }
 
       const body = {
-        message: this.question,
+        message: currentQuestion,
         context: contextList,
         model: 'luoli',
         aiMenuCode: this.aiMenuId
       };
+
+      let isSuccess = false; // 标记请求是否成功完成
 
       try {
         await this.fetchStream(
@@ -301,7 +305,25 @@ export default {
             this.throttledUpdateScrollbar();
           },
           () => {
-            this.chatList.push(this.question);
+            // 检测是否包含业务异常标记
+            const isBusinessError = this.response.includes('【对话模型异常') ||
+                                   this.response.includes('请联系孙老六') ||
+                                   this.response.includes('业务异常') ||
+                                   this.response.includes('系统错误');
+
+            if (isBusinessError) {
+              // 如果是业务异常，不添加到chatList，恢复状态
+              this.response = oldResponse; // 恢复之前的回答内容
+              this.question = currentQuestion; // 恢复问题，让用户可以重新发送
+              this.isLoading = false;
+              this.isResponseComplete = oldResponse !== ''; // 如果之前有内容，保持完成状态
+              this.$message.error('对话生成失败，请重试');
+              return;
+            }
+
+            // 只有在成功完成且没有业务异常时才添加到chatList
+            isSuccess = true;
+            this.chatList.push(currentQuestion);
             this.chatList.push(this.response);
 
             // 请求完成后的处理
@@ -318,14 +340,17 @@ export default {
           this.abortController.signal
         );
       } catch (error) {
+        // 发生错误时，清空错误的response，恢复问题框，允许用户重新发送
+        this.response = oldResponse; // 恢复之前的回答内容
+        this.question = currentQuestion; // 恢复问题，让用户可以重新发送
+
         if (error.name === 'AbortError') {
           this.$message.info('已取消对话生成');
         } else {
           this.$message.error('对话生成失败，请重试');
         }
         this.isLoading = false;
-        this.isResponseComplete = true;
-        this.question = ''; // 清空提问框内容
+        this.isResponseComplete = oldResponse !== ''; // 如果之前有内容，保持完成状态
       } finally {
         this.abortController = null;
       }
@@ -392,6 +417,7 @@ export default {
       this.imageUrl = ''; // 清空图片URL
       this.keyWord = ''; // 清空关键词
       this.keywordMap = {}; // 清空关键词Map
+      this.previousKeywordMap = {}; // 清空上一次的关键词Map
       this.isResponseComplete = false;
       // 更新滚动条
       this.$nextTick(() => {
@@ -409,6 +435,11 @@ export default {
       this.isGeneratingKeywords = true;
       this.currentStep = 1;
       this.abortController = new AbortController(); // 创建取消控制器
+
+      // 在生成新关键词之前，保存当前的关键词作为"上一次的关键词"
+      if (Object.keys(this.keywordMap).length > 0) {
+        this.previousKeywordMap = { ...this.keywordMap };
+      }
 
       // 构建上下文：如果之前已经有关键词，将其作为上下文传递
       const context = [];
@@ -440,6 +471,7 @@ export default {
         }, () => {
           // 解析并更新keywordMap
           this.parseAndUpdateKeywords(this.keyWord);
+
           this.currentStep = 2;
           this.textToImage();
         }, this.abortController.signal);
@@ -624,9 +656,25 @@ export default {
       this.currentStep = 1;
       this.abortController = new AbortController(); // 创建取消控制器
 
+      // 构建上下文：使用previousKeywordMap作为基础（上一次对话的关键词）
+      const context = [];
+      if (Object.keys(this.previousKeywordMap).length > 0) {
+        // 使用上一次成功生成的关键词作为基础状态
+        const previousKeywords = Object.entries(this.previousKeywordMap)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join('\n');
+        context.push('当前角色状态关键词：\n' + previousKeywords);
+        context.push('好的，我会根据新对话更新相应的关键词。');
+      } else if (this.initialCharacterState) {
+        // 如果还没有生成过关键词，使用初始人物状态配置
+        context.push('初始角色状态关键词：\n' + this.initialCharacterState);
+        context.push('好的，我会基于这个初始状态生成关键词。');
+      }
+
       const body = {
         model: 'makeKey',
         message: this.response,
+        context: context,
         aiMenuCode: this.aiMenuId
       };
 
