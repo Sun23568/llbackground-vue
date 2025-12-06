@@ -213,7 +213,7 @@
                 :auto-upload="false"
                 :show-file-list="false"
                 :on-change="handleBackgroundUpload"
-                accept="image/jpeg,image/png,image/jpg"
+                accept="image/jpeg,image/png,image/jpg,image/webp"
                 class="background-uploader">
                 <el-button size="small" icon="el-icon-upload">选择图片</el-button>
               </el-upload>
@@ -238,7 +238,7 @@
                   </el-button>
                 </div>
               </div>
-              <span v-else class="upload-tip">支持 jpg、png 格式，大小不超过 2MB</span>
+              <span v-else class="upload-tip">支持 jpg、png、webp 格式，大小不超过 20MB</span>
             </div>
           </el-form-item>
         </div>
@@ -508,15 +508,15 @@ export default {
     },
 
     async handleBackgroundUpload(file) {
-      const isImage = file.raw.type === 'image/jpeg' || file.raw.type === 'image/png' || file.raw.type === 'image/jpg';
-      const isLt2M = file.size / 1024 / 1024 < 2;
+      const isImage = file.raw.type === 'image/jpeg' || file.raw.type === 'image/png' || file.raw.type === 'image/jpg' || file.raw.type === 'image/webp';
+      const isLt20M = file.size / 1024 / 1024 < 20;
 
       if (!isImage) {
-        this.$message.error('上传图片只能是 JPG/PNG 格式!');
+        this.$message.error('上传图片只能是 JPG/PNG/WEBP 格式!');
         return false;
       }
-      if (!isLt2M) {
-        this.$message.error('上传图片大小不能超过 2MB!');
+      if (!isLt20M) {
+        this.$message.error('上传图片大小不能超过 20MB!');
         return false;
       }
 

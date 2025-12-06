@@ -60,6 +60,14 @@
                 @click="generateImage">
                 {{ generateImageButtonText }}
               </el-button>
+              <el-button
+                v-if="enableImageGeneration && (imageUrl || isGeneratingKeywords || isGeneratingImage) && !showImageSection"
+                size="small"
+                icon="el-icon-picture-outline"
+                type="success"
+                @click="openImageSection">
+                {{ (isGeneratingKeywords || isGeneratingImage) ? viewProgressText : viewImageText }}
+              </el-button>
             </slot>
           </div>
 
@@ -71,17 +79,6 @@
               icon="el-icon-close"
               @click="cancelGeneration">
               {{ cancelButtonText }}
-            </el-button>
-          </div>
-
-          <!-- 打开图片按钮 -->
-          <div v-if="enableImageGeneration && (imageUrl || isGeneratingKeywords || isGeneratingImage) && !showImageSection" class="open-image-button">
-            <el-button
-              size="small"
-              icon="el-icon-picture-outline"
-              type="success"
-              @click="openImageSection">
-              {{ (isGeneratingKeywords || isGeneratingImage) ? viewProgressText : viewImageText }}
             </el-button>
           </div>
         </div>
