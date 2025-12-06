@@ -65,10 +65,17 @@ export const asyncRouterMap = [
     children: [
       {
         path: 'girlAdventure',
-        name: '小飞历险记',
+        name: '小飞',
         component: _import('ai/girlAdventure'),
-        meta: { title: '少女历险记', icon: 'girl' },
+        meta: { title: '小飞', icon: 'girl' },
         menu: 'girlAdventure'
+      },
+      {
+        path: 'girlAdventureAutoDL',
+        name: '小飞(AutoDL)',
+        component: _import('ai/girlAdventureAutoDL'),
+        meta: { title: '小飞(AutoDL)', icon: 'girl' },
+        menu: 'girlAdventureAutoDL'
       },
       {
         path: 'aiConfig',

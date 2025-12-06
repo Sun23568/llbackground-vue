@@ -1,7 +1,7 @@
 <template>
   <AiChatContainer
-    aiMenuId="girlAdventure"
-    pageTitle="小飞历险记"
+    aiMenuId="girlAdventureAutoDL"
+    pageTitle="小飞历险记(AutoDL)"
   />
 </template>
 
@@ -9,7 +9,7 @@
 import AiChatContainer from '@/components/AiChatContainer';
 
 export default {
-  name: 'GirlAdventure',
+  name: 'GirlAdventureAutoDL',
   components: {
     AiChatContainer
   }

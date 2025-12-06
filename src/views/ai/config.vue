@@ -522,7 +522,7 @@ export default {
 
       const formData = new FormData();
       formData.append('file', file.raw);
-      formData.append('aiMenuId', this.tempConfigForm.menuCode);
+      formData.append('aiMenuCode', this.tempConfigForm.menuCode);
 
       try {
         const loading = this.$loading({
@@ -533,7 +533,7 @@ export default {
         });
 
         const response = await this.api({
-          url: '/ai/upload/background',
+          url: '/ai/config/background-image/upload',
           method: 'post',
           data: formData
         });
