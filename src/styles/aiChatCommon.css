@@ -36,7 +36,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+  background-color: rgba(0, 0, 0, 0.35); /* Dark overlay */
   pointer-events: none;
 }
 
