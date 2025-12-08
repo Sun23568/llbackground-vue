@@ -193,6 +193,7 @@
                   @click="downloadImage">
                   {{ downloadImageText }}
                 </el-button>
+                <div v-if="imageUrl" class="image-undo-hint">{{ imageUndoHintText }}</div>
               </div>
             </slot>
           </div>
@@ -315,6 +316,10 @@ export default {
     generatingImageText: {
       type: String,
       default: '正在生成图片...'
+    },
+    imageUndoHintText: {
+      type: String,
+      default: '图片不理想？点击“撤销”可以修改描述，再次生成。'
     }
   },
 
@@ -346,4 +351,10 @@ export default {
 
 <style scoped>
 @import '@/styles/aiChatCommon.css';
+
+.image-undo-hint {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 10px;
+}
 </style>
