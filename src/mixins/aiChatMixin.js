@@ -258,6 +258,28 @@ export default {
     },
 
     /**
+     * 撤销上次对话
+     */
+    undoLastConversation() {
+      if (this.chatList.length >= 2) {
+        // Remove last AI response and user question
+        this.chatList.pop(); // AI response
+        this.chatList.pop(); // User question
+
+        if (this.chatList.length > 0) {
+          this.response = this.chatList[this.chatList.length - 1];
+        } else {
+          this.response = '';
+        }
+
+        this.isResponseComplete = this.chatList.length > 0;
+        this.$message.success('已撤销上次对话');
+      } else {
+        this.$message.info('没有可以撤销的对话');
+      }
+    },
+
+    /**
      * 生成图片（生成关键词 + 图片）
      */
     async generateImage() {
