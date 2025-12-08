@@ -63,6 +63,9 @@
                 @click="generateImage">
                 {{ generateImageButtonText }}
               </el-button>
+              <span v-if="isResponseComplete" style="font-size: 12px; color: #C0C4CC; margin-left: 10px;">
+                {{ conversationUndoHintText }}
+              </span>
               <el-button
                 v-if="enableImageGeneration && (imageUrl || isGeneratingKeywords || isGeneratingImage) && !showImageSection"
                 size="small"
@@ -320,6 +323,10 @@ export default {
     imageUndoHintText: {
       type: String,
       default: '图片不理想？点击“撤销”可以修改描述，再次生成。'
+    },
+    conversationUndoHintText: {
+      type: String,
+      default: '不满意当前对话？点击“撤销”可以修改问题，再次提问。'
     }
   },
 
