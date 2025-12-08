@@ -50,6 +50,9 @@
               <el-button size="small" icon="el-icon-delete" @click="clearResponse">
                 {{ clearButtonText }}
               </el-button>
+              <el-button size="small" icon="el-icon-refresh-left" @click="undoLastConversation">
+                {{ undoButtonText }}
+              </el-button>
               <el-button
                 v-if="enableImageGeneration"
                 size="small"
@@ -265,6 +268,10 @@ export default {
       type: String,
       default: '清空'
     },
+    undoButtonText: {
+      type: String,
+      default: '撤销'
+    },
     generateImageButtonText: {
       type: String,
       default: '生成图片'
@@ -316,6 +323,7 @@ export default {
       return {
         copy: this.copyResponse,
         clear: this.clearResponse,
+        undo: this.undoLastConversation,
         generateImage: this.generateImage,
         cancel: this.cancelGeneration
       };
