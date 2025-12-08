@@ -78,6 +78,13 @@ export const asyncRouterMap = [
         menu: 'girlAdventureAutoDL'
       },
       {
+        path: 'driverGuye',
+        name: '赛车手顾野',
+        component: _import('ai/driverGuye'),
+        meta: { title: '赛车手顾野', icon: 'guye' },
+        menu: 'driverGuye'
+      },
+      {
         path: 'aiConfig',
         name: 'AI页面配置',
         component: _import('ai/config'),

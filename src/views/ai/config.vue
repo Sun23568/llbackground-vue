@@ -509,14 +509,14 @@ export default {
 
     async handleBackgroundUpload(file) {
       const isImage = file.raw.type === 'image/jpeg' || file.raw.type === 'image/png' || file.raw.type === 'image/jpg' || file.raw.type === 'image/webp';
-      const isLt20M = file.size / 1024 / 1024 < 20;
+      const isLt2M = file.size / 1024 / 1024 < 2;
 
       if (!isImage) {
         this.$message.error('上传图片只能是 JPG/PNG/WEBP 格式!');
         return false;
       }
-      if (!isLt20M) {
-        this.$message.error('上传图片大小不能超过 20MB!');
+      if (!isLt2M) {
+        this.$message.error('上传图片大小不能超过 2MB!');
         return false;
       }
 

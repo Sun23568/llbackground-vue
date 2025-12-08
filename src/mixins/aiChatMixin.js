@@ -18,6 +18,7 @@ export default {
   data() {
     return {
       // 基础配置
+      ollamaModelId: '',
       contextSize: 5,
       backgroundImageUrl: '',
       initialCharacterState: null,
@@ -87,6 +88,7 @@ export default {
         this.backgroundImageUrl = response.backgroundImage;
         this.contextSize = response.contextSize;
         this.initialCharacterState = response.initialCharacterState || null;
+        this.ollamaModelId = response.ollamaModelId || 'luoli';
       } catch (error) {
         console.error('加载背景图片失败', error);
       }
@@ -124,7 +126,7 @@ export default {
       const body = {
         message: currentQuestion,
         context: contextList,
-        model: 'luoli',
+        model: this.ollamaModelId,
         aiMenuCode: this.aiMenuId
       };
 
