@@ -271,7 +271,7 @@
 .action-buttons {
   display: flex;
   gap: 12px;
-  padding: 16px 24px;
+  padding: 8px 24px;
   border-top: 1px solid #e5e7eb;
   background: linear-gradient(to bottom, #fafafa 0%, #ffffff 100%);
   animation: slideInUp 0.4s ease-out;
@@ -325,7 +325,7 @@
 
 /* 输入区 */
 .question-input {
-  padding: 20px 24px;
+  padding: 10px 24px;
   border-top: 1px solid #e5e7eb;
   background-color: #fff;
 }
