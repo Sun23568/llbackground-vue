@@ -63,9 +63,6 @@
                 @click="generateImage">
                 {{ generateImageButtonText }}
               </el-button>
-              <span v-if="isResponseComplete" style="font-size: 12px; color: #C0C4CC; margin-left: 10px;">
-                {{ conversationUndoHintText }}
-              </span>
               <el-button
                 v-if="enableImageGeneration && (imageUrl || isGeneratingKeywords || isGeneratingImage) && !showImageSection"
                 size="small"
@@ -107,6 +104,9 @@
               </template>
             </el-input>
           </slot>
+          <div class="conversation-undo-hint">
+            {{ conversationUndoHintText }}
+          </div>
         </div>
       </div>
 
@@ -363,5 +363,12 @@ export default {
   font-size: 12px;
   color: #909399;
   margin-top: 10px;
+}
+
+.conversation-undo-hint {
+  font-size: 12px;
+  color: #409EFF;
+  margin-top: 8px;
+  text-align: center;
 }
 </style>
