@@ -233,13 +233,63 @@ export default {
 
     /**
      * 复制回答内容
+     * 兼容 HTTP 和 HTTPS 环境的双重降级策略
      */
     copyResponse() {
-      navigator.clipboard.writeText(this.response).then(() => {
-        this.$message.success('复制成功');
-      }).catch(err => {
-        this.$message.error('复制失败');
-      });
+      const text = this.response;
+
+      // 策略 1：尝试使用现代 Clipboard API（仅 HTTPS）
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(() => {
+            this.$message.success('复制成功');
+          })
+          .catch(err => {
+            console.warn('Clipboard API 失败，使用降级方案', err);
+            this.fallbackCopy(text);
+          });
+      } else {
+        // 策略 2：降级到传统的 execCommand 方法（兼容 HTTP）
+        this.fallbackCopy(text);
+      }
+    },
+
+    /**
+     * 降级复制方案 - 使用传统 execCommand
+     * 兼容 HTTP 环境和旧版浏览器
+     */
+    fallbackCopy(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.top = '0';
+      textarea.style.left = '0';
+      textarea.style.width = '2em';
+      textarea.style.height = '2em';
+      textarea.style.padding = '0';
+      textarea.style.border = 'none';
+      textarea.style.outline = 'none';
+      textarea.style.boxShadow = 'none';
+      textarea.style.background = 'transparent';
+      textarea.style.opacity = '0';
+
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          this.$message.success('复制成功');
+        } else {
+          this.$message.error('复制失败，请手动复制');
+        }
+      } catch (err) {
+        console.error('复制失败', err);
+        this.$message.error('复制失败，请手动复制');
+      } finally {
+        document.body.removeChild(textarea);
+      }
     },
 
     /**
