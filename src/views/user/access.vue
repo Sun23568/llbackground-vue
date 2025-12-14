@@ -2,9 +2,6 @@
   <div class="access-container">
     <div class="page-header">
       <h2 class="page-title">授权管理</h2>
-      <div class="header-actions">
-        <el-button type="success" icon="el-icon-plus" @click="addMenuVisible = true" v-permission="'access:addMenu'">新增菜单</el-button>
-      </div>
     </div>
 
     <el-table
@@ -188,32 +185,6 @@
         <el-button type="primary" @click="updateUserPermission">修 改</el-button>
       </div>
     </el-dialog>
-
-    <!-- 新增菜单弹窗 -->
-    <el-dialog title="新增菜单" :visible.sync="addMenuVisible" @close="addMenuClose" :append-to-body="true">
-      <el-form
-        ref="addMenuForm"
-        class="small-space"
-        :rules="menuRules"
-        :model="addMenuForm"
-        label-position="left"
-        label-width="100px"
-        style='width: 600px; margin-left:50px;'
-      >
-        <el-form-item label="菜单编码" prop="menuCode" required>
-          <el-input v-model="addMenuForm.menuCode" placeholder="请输入菜单编码" class="full-width-input"/>
-        </el-form-item>
-
-        <el-form-item label="菜单名称" prop="menuName" required>
-          <el-input v-model="addMenuForm.menuName" placeholder="请输入菜单名称" class="full-width-input"/>
-        </el-form-item>
-      </el-form>
-
-      <div slot="footer" class="dialog-footer" v-loading="addMenuButtonLoading">
-        <el-button @click="addMenuVisible = false">取 消</el-button>
-        <el-button type="primary" @click="addMenu">提 交</el-button>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
@@ -227,27 +198,11 @@ export default {
       allMenu: [],
       listLoading: false, // 数据加载等待动画
       updateUserAccessVisible: false,
-      addMenuVisible: false,
-      permissionTypeOptions: [],
       updateAccessButtonLoading: false, // 控制按钮遮罩
-      addMenuButtonLoading: false,
       activePermTypes: [], // 当前展开的权限类型折叠面板
-      addMenuForm: {
-        menuCode: '',
-        menuName: ''
-      },
       updateUserAccessForm: {
         menuIds: [],
         permissions: [],
-      },
-      adminName: '管理员',
-      menuRules: {
-        menuCode: [
-          {required: true, message: '请输入菜单编码', trigger: 'blur'}
-        ],
-        menuName: [
-          {required: true, message: '请输入菜单名称', trigger: 'blur'}
-        ]
       },
     }
   },
@@ -458,43 +413,11 @@ export default {
         }
       }
     },
-    addMenuClose() {
-      this.addMenuForm = {
-        menuCode: '',
-        menuName: '',
-      };
-      // 清空valid
-      this.$refs.addMenuForm.clearValidate();
-    },
     updateUserAccessClose() {
       this.updateUserAccessForm = {
         menuIds: [],
         permissions: []
       }
-    },
-    addMenu() {
-      var addMenuForm = this.addMenuForm;
-      this.$refs.addMenuForm.validate(valid => {
-        if (valid) {
-          this.addMenuButtonLoading = true;
-          // 修改角色
-          this.api({
-            url: "/access/add-menu",
-            method: "post",
-            data: addMenuForm
-          }).then(() => {
-            this.getAllPermisson();
-            this.$message.success("新增成功");
-          }).catch(() => {
-          }).finally(() => {
-            // 确保无论成功/失败都关闭加载状态
-            this.addMenuVisible = false;
-            this.addMenuButtonLoading = false;
-          });
-        } else {
-          return false;
-        }
-      });
     },
   }
 }
@@ -524,11 +447,6 @@ export default {
   font-weight: 600;
   color: #111827;
   margin: 0;
-}
-
-.header-actions {
-  display: flex;
-  gap: 12px;
 }
 
 /* 表格样式 */
