@@ -120,6 +120,20 @@ export const asyncRouterMap = [
         component: _import('file/FileUpload'),
         meta: { title: '文件上传', icon: 'upload-file' },
         menu: 'fileUpload'
+      },
+      {
+        path: 'permission',
+        name: '权限管理',
+        component: _import('user/permission'),
+        meta: { title: '权限管理', icon: 'permission' },
+        menu: 'permission'
+      },
+      {
+        path: 'menu',
+        name: '菜单管理',
+        component: _import('user/menu'),
+        meta: { title: '菜单管理', icon: 'menu' },
+        menu: 'menu'
       }
     ]
   }
