@@ -226,10 +226,6 @@ export default {
           acc[permType.type] = permType.perms;
           return acc;
         }, {});
-        this.permissionTypeOptions = this.allPermission.map(perm => ({
-          label: perm.type,
-          value: perm.type
-        }));
       })
     },
 
