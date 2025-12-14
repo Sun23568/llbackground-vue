@@ -2,10 +2,6 @@
   <div class="access-container">
     <div class="page-header">
       <h2 class="page-title">授权管理</h2>
-      <div class="header-actions">
-        <el-button type="primary" icon="el-icon-plus" @click="addPermVisible = true" v-permission="'access:addPerm'">新增权限</el-button>
-        <el-button type="success" icon="el-icon-plus" @click="addMenuVisible = true" v-permission="'access:addMenu'">新增菜单</el-button>
-      </div>
     </div>
 
     <el-table
@@ -189,73 +185,6 @@
         <el-button type="primary" @click="updateUserPermission">修 改</el-button>
       </div>
     </el-dialog>
-
-    <!-- 新增权限弹窗 -->
-    <el-dialog title="新增权限" :visible.sync="addPermVisible" @close="addPermClose" :append-to-body="true">
-      <el-form
-        ref="addPermForm"
-        class="small-space"
-        :rules="permRules"
-        :model="addPermForm"
-        label-position="left"
-        label-width="100px"
-        style='width: 600px; margin-left:50px;'
-      >
-        <el-form-item label="权限编码" prop="permCode" required>
-          <el-input v-model="addPermForm.permCode" placeholder="请输入权限编码" class="full-width-input"/>
-        </el-form-item>
-
-        <el-form-item label="权限名称" prop="permName" required>
-          <el-input v-model="addPermForm.permName" placeholder="请输入权限名称" class="full-width-input"/>
-        </el-form-item>
-
-        <el-form-item label="权限类型" prop="permType" required>
-          <el-select
-            v-model="addPermForm.permType"
-            placeholder="请选择权限类型"
-            filterable
-            allow-create>
-            <el-option
-              v-for="item in permissionTypeOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value">
-            </el-option>
-          </el-select>
-        </el-form-item>
-      </el-form>
-
-      <div slot="footer" class="dialog-footer" v-loading="addPermButtonLoading">
-        <el-button @click="addPermVisible = false">取 消</el-button>
-        <el-button type="primary" @click="addPermission">提 交</el-button>
-      </div>
-    </el-dialog>
-
-    <!-- 新增菜单弹窗 -->
-    <el-dialog title="新增菜单" :visible.sync="addMenuVisible" @close="addMenuClose" :append-to-body="true">
-      <el-form
-        ref="addMenuForm"
-        class="small-space"
-        :rules="menuRules"
-        :model="addMenuForm"
-        label-position="left"
-        label-width="100px"
-        style='width: 600px; margin-left:50px;'
-      >
-        <el-form-item label="菜单编码" prop="menuCode" required>
-          <el-input v-model="addMenuForm.menuCode" placeholder="请输入菜单编码" class="full-width-input"/>
-        </el-form-item>
-
-        <el-form-item label="菜单名称" prop="menuName" required>
-          <el-input v-model="addMenuForm.menuName" placeholder="请输入菜单名称" class="full-width-input"/>
-        </el-form-item>
-      </el-form>
-
-      <div slot="footer" class="dialog-footer" v-loading="addMenuButtonLoading">
-        <el-button @click="addMenuVisible = false">取 消</el-button>
-        <el-button type="primary" @click="addMenu">提 交</el-button>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
@@ -269,45 +198,11 @@ export default {
       allMenu: [],
       listLoading: false, // 数据加载等待动画
       updateUserAccessVisible: false,
-      addPermVisible: false,
-      addMenuVisible: false,
-      permissionTypeOptions: [],
       updateAccessButtonLoading: false, // 控制按钮遮罩
-      addPermButtonLoading: false,
-      addMenuButtonLoading: false,
       activePermTypes: [], // 当前展开的权限类型折叠面板
-      addPermForm: {
-        permCode: '',
-        permName: '',
-        permType: ''
-      },
-      addMenuForm: {
-        menuCode: '',
-        menuName: ''
-      },
       updateUserAccessForm: {
         menuIds: [],
         permissions: [],
-      },
-      adminName: '管理员',
-      permRules: {
-        permCode: [
-          {required: true, message: '请输入权限编码', trigger: 'blur'}
-        ],
-        permName: [
-          {required: true, message: '请输入权限名称', trigger: 'blur'}
-        ],
-        permType: [
-          {required: true, message: '请选择权限类型', trigger: 'change'}
-        ]
-      },
-      menuRules: {
-        menuCode: [
-          {required: true, message: '请输入菜单编码', trigger: 'blur'}
-        ],
-        menuName: [
-          {required: true, message: '请输入菜单名称', trigger: 'blur'}
-        ]
       },
     }
   },
@@ -331,10 +226,6 @@ export default {
           acc[permType.type] = permType.perms;
           return acc;
         }, {});
-        this.permissionTypeOptions = this.allPermission.map(perm => ({
-          label: perm.type,
-          value: perm.type
-        }));
       })
     },
 
@@ -518,76 +409,11 @@ export default {
         }
       }
     },
-    addPermClose() {
-      this.addPermForm = {
-        permCode: '',
-        permName: '',
-        permType: ''
-      };
-      // 清空valid
-      this.$refs.addPermForm.clearValidate();
-    },
-    addMenuClose() {
-      this.addMenuForm = {
-        menuCode: '',
-        menuName: '',
-      };
-      // 清空valid
-      this.$refs.addMenuForm.clearValidate();
-    },
     updateUserAccessClose() {
       this.updateUserAccessForm = {
         menuIds: [],
         permissions: []
       }
-    },
-    addPermission() {
-      var addPermForm = this.addPermForm;
-      this.$refs.addPermForm.validate(valid => {
-        if (valid) {
-          this.addPermButtonLoading = true;
-          // 修改角色
-          this.api({
-            url: "/access/add-perm",
-            method: "post",
-            data: addPermForm
-          }).then(() => {
-            this.getAllPermisson();
-            this.$message.success("新增成功");
-          }).catch(() => {
-          }).finally(() => {
-            // 确保无论成功/失败都关闭加载状态
-            this.addPermVisible = false;
-            this.addPermButtonLoading = false;
-          });
-        } else {
-          return false;
-        }
-      });
-    },
-    addMenu() {
-      var addMenuForm = this.addMenuForm;
-      this.$refs.addMenuForm.validate(valid => {
-        if (valid) {
-          this.addMenuButtonLoading = true;
-          // 修改角色
-          this.api({
-            url: "/access/add-menu",
-            method: "post",
-            data: addMenuForm
-          }).then(() => {
-            this.getAllPermisson();
-            this.$message.success("新增成功");
-          }).catch(() => {
-          }).finally(() => {
-            // 确保无论成功/失败都关闭加载状态
-            this.addMenuVisible = false;
-            this.addMenuButtonLoading = false;
-          });
-        } else {
-          return false;
-        }
-      });
     },
   }
 }
@@ -617,11 +443,6 @@ export default {
   font-weight: 600;
   color: #111827;
   margin: 0;
-}
-
-.header-actions {
-  display: flex;
-  gap: 12px;
 }
 
 /* 表格样式 */

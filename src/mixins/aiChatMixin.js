@@ -142,9 +142,9 @@ export default {
           () => {
             // 检测业务异常
             const isBusinessError = this.response.includes('【对话模型异常') ||
-                                   this.response.includes('请联系孙老六') ||
-                                   this.response.includes('业务异常') ||
-                                   this.response.includes('系统错误');
+              this.response.includes('请联系孙老六') ||
+              this.response.includes('业务异常') ||
+              this.response.includes('系统错误');
 
             if (isBusinessError) {
               this.response = oldResponse;
@@ -571,24 +571,7 @@ export default {
      * 解析并更新关键词
      */
     parseAndUpdateKeywords(text) {
-      const lines = text.split('\n');
-      lines.forEach(line => {
-        const trimmedLine = line.trim();
-        if (trimmedLine) {
-          const match = trimmedLine.match(/^([^:：]+)[：:](.+)$/);
-          if (match) {
-            const key = match[1].trim();
-            const value = match[2].trim();
-            if (key && value) {
-              this.keywordMap[key] = value;
-            }
-          }
-        }
-      });
-
-      if (Object.keys(this.keywordMap).length === 0 && text.trim()) {
-        this.keywordMap['默认'] = text.trim();
-      }
+      this.keywordMap['默认'] = text.trim();
     },
 
     /**
