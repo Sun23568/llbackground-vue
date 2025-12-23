@@ -26,18 +26,19 @@ export default new Router({
   routes: constantRouterMap
 })
 export const asyncRouterMap = [
+  // ========== 功能模块 ==========
   {
     path: '/system',
     component: Layout,
     redirect: '/system/article',
     name: '功能模块',
-    meta: { title: '功能模块', icon: 'tree' },
+    meta: { title: '功能模块', icon: 'function-line' },
     children: [
       {
         path: 'article',
-        name: '文章',
+        name: '文章列表',
         component: _import('article/article'),
-        meta: { title: '文章', icon: 'example' },
+        meta: { title: '文章列表', icon: 'article-line' },
         menu: 'article'
       },
       {
@@ -56,84 +57,106 @@ export const asyncRouterMap = [
       }
     ]
   },
+  // ========== AI模块 ==========
   {
     path: '/ai',
     component: Layout,
     redirect: '/ai/girlAdventure',
     name: 'AI模块',
-    meta: { title: 'AI模块', icon: 'ai' },
+    meta: { title: 'AI模块', icon: 'ai-line' },
     children: [
       {
         path: 'girlAdventure',
         name: '小飞',
         component: _import('ai/girlAdventure'),
-        meta: { title: '小飞', icon: 'girl' },
+        meta: { title: '小飞', icon: 'girl-line' },
         menu: 'girlAdventure'
       },
       {
         path: 'girlAdventureAutoDL',
         name: '小飞(AutoDL)',
         component: _import('ai/girlAdventureAutoDL'),
-        meta: { title: '小飞(AutoDL)', icon: 'girl' },
+        meta: { title: '小飞(AutoDL)', icon: 'girl-autodl-line' },
         menu: 'girlAdventureAutoDL'
       },
       {
         path: 'driverGuye',
         name: '赛车手顾野',
         component: _import('ai/driverGuye'),
-        meta: { title: '赛车手顾野', icon: 'guye' },
+        meta: { title: '赛车手顾野', icon: 'guye-line' },
         menu: 'driverGuye'
-      },
-      {
-        path: 'aiConfig',
-        name: 'AI页面配置',
-        component: _import('ai/config'),
-        meta: { title: 'AI页面配置', icon: 'ai-config' },
-        menu: 'aiConfig'
       }
     ]
   },
+  // ========== 用户管理 ==========
   {
-    path: '/user',
+    path: '/user-manage',
     component: Layout,
-    redirect: '/user/',
-    name: '',
-    meta: { title: '杂项', icon: 'table' },
+    redirect: '/user-manage/',
+    name: '用户管理',
+    meta: { title: '用户管理', icon: 'user-manage-line' },
     children: [
       {
         path: '',
         name: '用户列表',
         component: _import('user/user'),
-        meta: { title: '用户列表', icon: 'user' },
+        meta: { title: '用户列表', icon: 'user-line' },
         menu: 'user'
       },
       {
         path: 'access',
         name: '授权管理',
         component: _import('user/access'),
-        meta: { title: '授权管理', icon: 'access' },
+        meta: { title: '授权管理', icon: 'user-check-line' },
         menu: 'access'
-      },
-      {
-        path: 'upload',
-        name: '文件上传',
-        component: _import('file/FileUpload'),
-        meta: { title: '文件上传', icon: 'upload-file' },
-        menu: 'fileUpload'
-      },
+      }
+    ]
+  },
+  // ========== 系统配置 ==========
+  {
+    path: '/system-config',
+    component: Layout,
+    redirect: '/system-config/permission',
+    name: '系统配置',
+    meta: { title: '系统配置', icon: 'system-config-line' },
+    children: [
       {
         path: 'permission',
-        name: '权限管理',
+        name: '权限配置',
         component: _import('user/permission'),
-        meta: { title: '权限管理', icon: 'permission' },
+        meta: { title: '权限配置', icon: 'shield-keyhole-line' },
         menu: 'permission'
       },
       {
         path: 'menu',
-        name: '菜单管理',
+        name: '菜单配置',
         component: _import('user/menu'),
-        meta: { title: '菜单管理', icon: 'menu' },
+        meta: { title: '菜单配置', icon: 'menu-line' },
         menu: 'menu'
+      },
+      {
+        path: 'ai-config',
+        name: 'AI页面配置',
+        component: _import('ai/config'),
+        meta: { title: 'AI页面配置', icon: 'ai-settings-line' },
+        menu: 'aiConfig'
+      }
+    ]
+  },
+  // ========== 文件管理 ==========
+  {
+    path: '/file-manage',
+    component: Layout,
+    redirect: '/file-manage/',
+    name: '文件管理',
+    meta: { title: '文件管理', icon: 'file-manage-line' },
+    children: [
+      {
+        path: '',
+        name: '文件上传',
+        component: _import('file/FileUpload'),
+        meta: { title: '文件上传', icon: 'upload-cloud-line' },
+        menu: 'fileUpload'
       }
     ]
   }
