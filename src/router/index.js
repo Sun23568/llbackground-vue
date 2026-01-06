@@ -85,6 +85,13 @@ export const asyncRouterMap = [
         component: _import('ai/driverGuye'),
         meta: { title: '赛车手顾野', icon: 'guye-line' },
         menu: 'driverGuye'
+      },
+      {
+        path: 'characterCard',
+        name: '角色卡管理',
+        component: _import('ai/characterCard'),
+        meta: { title: '角色卡管理', icon: 'postcard-line' },
+        menu: 'characterCard'
       }
     ]
   },
