@@ -251,6 +251,28 @@
             <span class="section-subtitle">（用于AI首次生成时的初始提示词）</span>
           </div>
 
+          <!-- 角色卡选择 -->
+          <el-form-item label="选择角色卡（可选）">
+            <el-select
+              v-model="selectedCharacterCardId"
+              filterable
+              clearable
+              placeholder="输入角色名搜索角色卡"
+              @change="handleCharacterCardSelect"
+              style="width: 100%">
+              <el-option
+                v-for="card in characterCardList"
+                :key="card.id"
+                :label="card.cardName"
+                :value="card.id">
+              </el-option>
+            </el-select>
+            <div class="keyword-tips" style="margin-top: 8px;">
+              <i class="el-icon-info"></i>
+              <span>选择角色卡后将自动填充人物描述，您也可以手动输入或修改</span>
+            </div>
+          </el-form-item>
+
           <!-- 输入描述区域 -->
           <el-form-item label="人物描述">
             <el-input
@@ -380,6 +402,8 @@ export default {
       characterDescription: '', // 人物描述文本
       initialCharacterState: '', // 初始人物状态关键词（文本）
       isGeneratingCharacterKeywords: false, // 是否正在生成关键词
+      characterCardList: [], // 角色卡列表
+      selectedCharacterCardId: '', // 选中的角色卡ID
       formRules: {
         menuName: [
           { required: true, message: '请输入菜单名称', trigger: 'blur' }
@@ -392,6 +416,7 @@ export default {
   },
   created() {
     this.getList();
+    this.loadCharacterCardList();
   },
   methods: {
     getList() {
@@ -421,6 +446,7 @@ export default {
       };
       this.characterDescription = '';
       this.initialCharacterState = '';
+      this.selectedCharacterCardId = '';
       this.dialogStatus = 'create';
       this.dialogFormVisible = true;
       this.$nextTick(() => {
@@ -434,6 +460,7 @@ export default {
       this.tempConfigForm = { ...row };
       this.characterDescription = '';
       this.initialCharacterState = row.initialCharacterState || '';
+      this.selectedCharacterCardId = row.characterCardId || '';
       this.dialogStatus = 'update';
       this.dialogFormVisible = true;
       this.$nextTick(() => {
@@ -458,6 +485,8 @@ export default {
           }
           // 添加初始人物状态
           submitData.initialCharacterState = this.initialCharacterState || null;
+          // 添加角色卡ID
+          submitData.characterCardId = this.selectedCharacterCardId || null;
           this.api({
             url: "/ai/config/add",
             method: "post",
@@ -487,6 +516,8 @@ export default {
           }
           // 添加初始人物状态
           submitData.initialCharacterState = this.initialCharacterState || null;
+          // 添加角色卡ID
+          submitData.characterCardId = this.selectedCharacterCardId || null;
           this.api({
             url: "/ai/config/update",
             method: "post",
@@ -635,6 +666,37 @@ export default {
     clearCharacterState() {
       this.characterDescription = '';
       this.initialCharacterState = '';
+    },
+
+    /**
+     * 加载角色卡列表
+     */
+    loadCharacterCardList() {
+      this.api({
+        url: '/character-card/list',
+        method: 'get'
+      }).then(data => {
+        this.characterCardList = data || [];
+      }).catch(err => {
+        console.error('加载角色卡列表失败', err);
+      });
+    },
+
+    /**
+     * 处理角色卡选择
+     */
+    handleCharacterCardSelect(cardId) {
+      if (!cardId) {
+        // 清空选择
+        return;
+      }
+      // 根据ID找到对应的角色卡
+      const selectedCard = this.characterCardList.find(card => card.id === cardId);
+      if (selectedCard && selectedCard.cardDescription) {
+        // 将角色卡描述填充到人物描述框
+        this.characterDescription = selectedCard.cardDescription;
+        this.$message.success('已填充角色卡描述，您可以继续编辑或生成关键词');
+      }
     }
   }
 }
