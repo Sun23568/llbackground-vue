@@ -48,10 +48,43 @@
           :key="card.id"
           class="card-col">
           <el-card class="character-card" shadow="hover">
+            <!-- 右上角悬浮菜单 -->
+            <el-dropdown
+              trigger="click"
+              class="card-menu"
+              @command="handleMenuCommand">
+              <span class="el-dropdown-link">
+                <i class="el-icon-more"></i>
+              </span>
+              <el-dropdown-menu slot="dropdown">
+                <el-dropdown-item
+                  :command="{action: 'chat', card: card}"
+                  icon="el-icon-chat-dot-round">
+                  开始聊天
+                </el-dropdown-item>
+                <el-dropdown-item
+                  :command="{action: 'view', card: card}"
+                  icon="el-icon-view"
+                  divided>
+                  查看详情
+                </el-dropdown-item>
+                <el-dropdown-item
+                  :command="{action: 'config', card: card}"
+                  icon="el-icon-setting">
+                  配置角色
+                </el-dropdown-item>
+                <el-dropdown-item
+                  :command="{action: 'delete', card: card}"
+                  icon="el-icon-delete"
+                  divided>
+                  删除
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </el-dropdown>
+
             <!-- 卡片头部 -->
             <div slot="header" class="card-header">
               <span class="card-title">{{ card.cardName }}</span>
-              <el-tag size="mini" type="success">有效</el-tag>
             </div>
 
             <!-- 卡片内容 -->
@@ -63,26 +96,6 @@
                 <i class="el-icon-time"></i>
                 {{ card.createTime }}
               </div>
-            </div>
-
-            <!-- 卡片操作 -->
-            <div class="card-actions">
-              <el-button
-                type="primary"
-                icon="el-icon-view"
-                size="small"
-                plain
-                @click="viewDetail(card)">
-                查看详情
-              </el-button>
-              <el-button
-                type="danger"
-                icon="el-icon-delete"
-                size="small"
-                plain
-                @click="handleDelete(card)">
-                删除
-              </el-button>
             </div>
           </el-card>
         </el-col>
@@ -156,10 +169,107 @@
         <el-button type="primary" @click="detailDialogVisible = false">关 闭</el-button>
       </div>
     </el-dialog>
+
+    <!-- 配置弹窗 -->
+    <el-dialog
+      title="配置角色卡"
+      :visible.sync="configDialogVisible"
+      width="600px"
+      :close-on-click-modal="false">
+      <el-form
+        :model="configForm"
+        :rules="configRules"
+        ref="configFormRef"
+        label-width="120px">
+
+        <el-form-item label="角色名称" prop="cardName">
+          <el-input
+            v-model="configForm.cardName"
+            placeholder="请输入角色名称"
+            maxlength="100"
+            show-word-limit />
+        </el-form-item>
+
+        <el-form-item label="用户名称" prop="userName">
+          <el-input
+            v-model="configForm.userName"
+            placeholder="请输入用户名称（对应角色卡中的{user}占位符）"
+            maxlength="100"
+            show-word-limit>
+            <template slot="prepend">{user}</template>
+          </el-input>
+          <div class="form-tip">
+            <i class="el-icon-info"></i>
+            此名称将替换角色卡中的 {user} 占位符
+          </div>
+        </el-form-item>
+
+        <el-form-item label="人物描述" prop="characterDescription">
+          <el-input
+            type="textarea"
+            v-model="configForm.characterDescription"
+            :rows="3"
+            placeholder="请描述人物的外观特征（自动从角色卡填充）"
+            :disabled="isGeneratingKeywords">
+          </el-input>
+          <div class="form-tip">
+            <i class="el-icon-info"></i>
+            用于AI生成初始提示词，会自动填充角色卡的描述信息
+          </div>
+        </el-form-item>
+
+        <!-- AI生成关键词按钮 -->
+        <div class="keyword-actions">
+          <el-button
+            size="small"
+            type="primary"
+            icon="el-icon-magic-stick"
+            :loading="isGeneratingKeywords"
+            :disabled="!configForm.characterDescription.trim() || isGeneratingKeywords"
+            @click="generateKeywords">
+            {{ isGeneratingKeywords ? '生成中...' : 'AI生成关键词' }}
+          </el-button>
+          <el-button
+            size="small"
+            icon="el-icon-delete"
+            :disabled="isGeneratingKeywords"
+            @click="clearKeywords">
+            清空
+          </el-button>
+        </div>
+
+        <el-form-item label="初始提示词" prop="initialPrompt">
+          <el-input
+            type="textarea"
+            v-model="configForm.initialPrompt"
+            placeholder="请输入初始提示词（例如：发色: long silver hair, 面部: blue eyes, smile）"
+            :rows="6"
+            maxlength="2000"
+            show-word-limit />
+          <div class="form-tip">
+            <i class="el-icon-info"></i>
+            用于AI首次生成图片时的初始人物状态描述
+          </div>
+        </el-form-item>
+      </el-form>
+
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="configDialogVisible = false">取消</el-button>
+        <el-button
+          type="primary"
+          @click="saveConfig"
+          :loading="configSaving">
+          保存配置
+        </el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
+import { fetchEventSource } from '@microsoft/fetch-event-source'
+import Cookies from 'js-cookie'
+
 export default {
   name: 'CharacterCard',
   data() {
@@ -169,7 +279,30 @@ export default {
       uploadDialogVisible: false,
       detailDialogVisible: false,
       currentCard: null,
-      uploadAction: '' // 不使用默认action
+      uploadAction: '', // 不使用默认action
+
+      // 配置弹窗相关
+      configDialogVisible: false,
+      configSaving: false,
+      isGeneratingKeywords: false,
+      configForm: {
+        id: '',
+        cardName: '',
+        userName: '',
+        characterDescription: '',
+        initialPrompt: ''
+      },
+      configRules: {
+        cardName: [
+          { required: true, message: '请输入角色名称', trigger: 'blur' }
+        ],
+        userName: [
+          { max: 100, message: '用户名称不能超过100个字符', trigger: 'blur' }
+        ],
+        initialPrompt: [
+          { max: 2000, message: '初始提示词不能超过2000个字符', trigger: 'blur' }
+        ]
+      }
     }
   },
   mounted() {
@@ -338,6 +471,152 @@ export default {
       } catch (e) {
         this.$message.error('复制失败')
       }
+    },
+
+    /**
+     * 统一处理菜单命令
+     */
+    handleMenuCommand(command) {
+      const { action, card } = command
+      switch (action) {
+        case 'chat':
+          this.handleChat(card)
+          break
+        case 'view':
+          this.viewDetail(card)
+          break
+        case 'config':
+          this.openConfigDialog(card)
+          break
+        case 'delete':
+          this.handleDelete(card)
+          break
+      }
+    },
+
+    /**
+     * 开始聊天 - 跳转到AI对话页面
+     */
+    handleChat(card) {
+      // 跳转到统一的AI对话页面，通过cardId参数区分角色卡
+      this.$router.push({
+        path: '/ai/chat',
+        query: {
+          cardId: card.id,
+          cardName: card.cardName
+        }
+      })
+    },
+
+    /**
+     * 打开配置弹窗
+     */
+    openConfigDialog(card) {
+      this.configForm = {
+        id: card.id,
+        cardName: card.cardName,
+        userName: card.userName || '',
+        characterDescription: card.cardDescription || '',
+        initialPrompt: card.initialPrompt || ''
+      }
+      this.configDialogVisible = true
+    },
+
+    /**
+     * 保存角色卡配置
+     */
+    async saveConfig() {
+      try {
+        // 表单验证
+        await this.$refs.configFormRef.validate()
+
+        this.configSaving = true
+
+        // 调用API
+        await this.api({
+          url: '/character-card/update-config',
+          method: 'post',
+          data: this.configForm
+        })
+
+        this.$message.success('配置保存成功')
+
+        // 关闭弹窗
+        this.configDialogVisible = false
+
+        // 刷新列表
+        this.loadCardList()
+
+      } catch (error) {
+        // 验证失败或API错误，拦截器已处理
+        console.error('保存配置失败:', error)
+      } finally {
+        this.configSaving = false
+      }
+    },
+
+    /**
+     * AI生成关键词
+     */
+    async generateKeywords() {
+      if (!this.configForm.characterDescription.trim()) {
+        this.$message.warning('请先输入人物描述')
+        return
+      }
+
+      this.isGeneratingKeywords = true
+      this.configForm.initialPrompt = ''
+
+      try {
+        const token = Cookies.get('token')
+        await fetchEventSource('/api/ai/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'token': token
+          },
+          body: JSON.stringify({
+            message: this.configForm.characterDescription,
+            chatList: [],
+            aiMenuCode: 'makeKey'
+          }),
+          onmessage: (msg) => {
+            if (msg.data) {
+              this.configForm.initialPrompt += msg.data
+            }
+          },
+          onerror: (err) => {
+            console.error('生成关键词失败:', err)
+            this.$message.error('生成关键词失败')
+            throw err
+          },
+          onclose: () => {
+            this.isGeneratingKeywords = false
+            if (this.configForm.initialPrompt) {
+              this.$message.success('关键词生成完成')
+            }
+          }
+        })
+      } catch (error) {
+        this.isGeneratingKeywords = false
+        console.error('生成关键词错误:', error)
+      }
+    },
+
+    /**
+     * 清空关键词
+     */
+    clearKeywords() {
+      this.$confirm('确定要清空初始提示词吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        this.configForm.initialPrompt = ''
+        this.$message.success('已清空')
+      }).catch(() => {
+        // 取消操作
+      })
     }
   }
 }
@@ -474,6 +753,44 @@ export default {
   overflow: hidden;
   position: relative;
 
+  /* 右上角悬浮菜单 */
+  .card-menu {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    cursor: pointer;
+    z-index: 10;
+
+    .el-dropdown-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(4px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:hover {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+        transform: scale(1.05);
+      }
+
+      &:active {
+        transform: scale(0.95);
+      }
+
+      i {
+        font-size: 16px;
+        color: #667eea;
+        font-weight: 600;
+      }
+    }
+  }
+
   /* 卡片悬浮效果 */
   &:hover {
     transform: translateY(-8px);
@@ -559,30 +876,6 @@ export default {
       i {
         margin-right: 6px;
         font-size: 14px;
-      }
-    }
-  }
-
-  .card-actions {
-    display: flex;
-    gap: 12px;
-    padding: 16px 20px;
-    border-top: 1px solid #f0f0f0;
-    background: linear-gradient(to bottom, #fafafa 0%, #ffffff 100%);
-
-    .el-button {
-      flex: 1;
-      border-radius: 8px;
-      font-weight: 500;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      }
-
-      &:active {
-        transform: translateY(0);
       }
     }
   }
@@ -749,6 +1042,45 @@ export default {
       ::v-deep .json-null {
         color: #808080;
         font-style: italic;
+      }
+    }
+  }
+}
+
+/* 表单提示样式 */
+.form-tip {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
+
+  i {
+    margin-right: 4px;
+  }
+}
+
+/* AI生成关键词按钮样式 */
+.keyword-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-left: 120px;
+
+  .el-button {
+    border-radius: 6px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+    }
+
+    &.el-button--primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+
+      &:hover {
+        background: linear-gradient(135deg, #5568d3 0%, #65408b 100%);
       }
     }
   }

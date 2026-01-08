@@ -92,6 +92,13 @@ export const asyncRouterMap = [
         component: _import('ai/characterCard'),
         meta: { title: '角色卡管理', icon: 'postcard-line' },
         menu: 'characterCard'
+      },
+      {
+        path: 'chat',
+        name: '角色对话',
+        component: _import('ai/chat'),
+        meta: { title: '角色对话' },
+        hidden: true  // 不在菜单中显示
       }
     ]
   },
