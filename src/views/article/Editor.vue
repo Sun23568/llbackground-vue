@@ -194,6 +194,42 @@ export default {
       const editor = this.$refs.editor;
       this.quill = new Quill(editor, this.options);
 
+      // 使用 Clipboard Module 的 Matcher 机制处理粘贴，防止换行符翻倍
+      const clipboard = this.quill.getModule('clipboard');
+
+      // 保存原始的 convert 方法
+      const originalConvert = clipboard.convert.bind(clipboard);
+
+      // 重写 convert 方法
+      clipboard.convert = function(html) {
+        // 调用原始convert
+        let delta = originalConvert(html);
+
+        console.log('[粘贴调试] 原始Delta:', JSON.stringify(delta.ops, null, 2));
+
+        // 检查delta中的ops，移除多余的换行符
+        const ops = delta.ops || [];
+        const newOps = [];
+
+        for (let i = 0; i < ops.length; i++) {
+          const op = ops[i];
+
+          // 如果是连续的两个换行符，且第一个没有特殊格式，则跳过第一个
+          if (i < ops.length - 1 &&
+              typeof op.insert === 'string' && op.insert === '\n' && !op.attributes &&
+              typeof ops[i + 1].insert === 'string' && ops[i + 1].insert === '\n') {
+            console.log('[粘贴调试] 检测到连续换行，跳过第一个');
+            // 跳过当前换行
+            continue;
+          }
+
+          newOps.push(op);
+        }
+
+        console.log('[粘贴调试] 处理后Delta:', JSON.stringify(newOps, null, 2));
+        return new Delta(newOps);
+      };
+
       this.quill.on("text-change", (delta, oldDelta, source) => {
         let html = this.$refs.editor.children[0].innerHTML;
         this.currentValue = html;

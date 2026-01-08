@@ -22,6 +22,7 @@ export default {
       contextSize: 5,
       backgroundImageUrl: '',
       initialCharacterState: null,
+      characterCardId: null,
 
       // 对话相关
       question: '',
@@ -88,6 +89,7 @@ export default {
         this.backgroundImageUrl = response.backgroundImage;
         this.contextSize = response.contextSize;
         this.initialCharacterState = response.initialCharacterState || null;
+        this.characterCardId = response.characterCardId || null;
         this.ollamaModelId = response.ollamaModelId || 'luoli';
       } catch (error) {
         console.error('加载背景图片失败', error);
@@ -126,6 +128,7 @@ export default {
       const body = {
         message: currentQuestion,
         context: contextList,
+        characterCardId: this.characterCardId,
         model: this.ollamaModelId,
         aiMenuCode: this.aiMenuId
       };
