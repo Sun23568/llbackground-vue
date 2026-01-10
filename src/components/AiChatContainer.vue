@@ -1,5 +1,5 @@
 <template>
-  <div class="page-container ai-chat-page" :style="{ backgroundImage: `url(${backgroundImageUrl})` }">
+  <div class="page-container ai-chat-page" :style="{ backgroundImage: `url(${customBackgroundImage || backgroundImageUrl})` }">
     <div class="chat-container" :class="{ 'show-image-section': showImageSection }">
       <!-- 左侧对话区 -->
       <div class="chat-section">
@@ -249,6 +249,11 @@ export default {
     enableImageGeneration: {
       type: Boolean,
       default: true
+    },
+    // 自定义背景图片URL（优先级高于从后端获取的背景图）
+    customBackgroundImage: {
+      type: String,
+      default: ''
     },
 
     // ============ 文案配置 ============
