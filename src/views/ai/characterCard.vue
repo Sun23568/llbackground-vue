@@ -11,17 +11,10 @@
           <p class="page-subtitle">管理您的AI角色卡，支持新增、查看和删除操作</p>
         </div>
         <div class="action-section">
-          <el-button
-            type="primary"
-            icon="el-icon-upload"
-            size="medium"
-            @click="uploadDialogVisible = true">
+          <el-button type="primary" icon="el-icon-upload" size="medium" @click="uploadDialogVisible = true">
             上传角色卡
           </el-button>
-          <el-button
-            icon="el-icon-refresh"
-            size="medium"
-            @click="loadCardList">
+          <el-button icon="el-icon-refresh" size="medium" @click="loadCardList">
             刷新
           </el-button>
         </div>
@@ -31,53 +24,29 @@
     <!-- 角色卡列表 -->
     <el-card class="list-card" shadow="never" v-loading="loading">
       <!-- 空状态 -->
-      <el-empty
-        v-if="!loading && cardList.length === 0"
-        description="暂无角色卡，请上传新的角色卡"
-        :image-size="120">
+      <el-empty v-if="!loading && cardList.length === 0" description="暂无角色卡，请上传新的角色卡" :image-size="120">
       </el-empty>
 
       <!-- 卡片网格 -->
       <el-row :gutter="20" v-else>
-        <el-col
-          :xs="24"
-          :sm="12"
-          :md="8"
-          :lg="4"
-          v-for="card in cardList"
-          :key="card.id"
-          class="card-col">
-          <div class="character-card" @click="handleMenuCommand({action: 'chat', card: card})">
+        <el-col :xs="24" :sm="12" :md="8" :lg="4" v-for="card in cardList" :key="card.id" class="card-col">
+          <div class="character-card" @click="handleMenuCommand({ action: 'chat', card: card })">
             <!-- 右上角悬浮菜单 -->
-            <el-dropdown
-              trigger="click"
-              class="card-menu"
-              @command="handleMenuCommand"
-              @click.native.stop>
+            <el-dropdown trigger="click" class="card-menu" @command="handleMenuCommand" @click.native.stop>
               <span class="el-dropdown-link">
                 <i class="el-icon-more"></i>
               </span>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item
-                  :command="{action: 'chat', card: card}"
-                  icon="el-icon-chat-dot-round">
+                <el-dropdown-item :command="{ action: 'chat', card: card }" icon="el-icon-chat-dot-round">
                   开始聊天
                 </el-dropdown-item>
-                <el-dropdown-item
-                  :command="{action: 'view', card: card}"
-                  icon="el-icon-view"
-                  divided>
+                <el-dropdown-item :command="{ action: 'view', card: card }" icon="el-icon-view" divided>
                   查看详情
                 </el-dropdown-item>
-                <el-dropdown-item
-                  :command="{action: 'config', card: card}"
-                  icon="el-icon-setting">
+                <el-dropdown-item :command="{ action: 'config', card: card }" icon="el-icon-setting">
                   配置角色
                 </el-dropdown-item>
-                <el-dropdown-item
-                  :command="{action: 'delete', card: card}"
-                  icon="el-icon-delete"
-                  divided>
+                <el-dropdown-item :command="{ action: 'delete', card: card }" icon="el-icon-delete" divided>
                   删除
                 </el-dropdown-item>
               </el-dropdown-menu>
@@ -85,9 +54,7 @@
 
             <!-- 角色头像 -->
             <div class="avatar-wrapper">
-              <img
-                :src="card.avatar || 'https://via.placeholder.com/300x400?text=No+Image'"
-                :alt="card.cardName"
+              <img :src="card.avatar || 'https://via.placeholder.com/300x400?text=No+Image'" :alt="card.cardName"
                 class="character-avatar">
 
               <!-- 悬停遮罩层 -->
@@ -109,19 +76,9 @@
     </el-card>
 
     <!-- 上传弹窗 -->
-    <el-dialog
-      title="上传角色卡"
-      :visible.sync="uploadDialogVisible"
-      width="500px"
-      :close-on-click-modal="false">
-      <el-upload
-        class="upload-demo"
-        drag
-        :action="uploadAction"
-        :http-request="uploadFile"
-        :before-upload="beforeUpload"
-        :show-file-list="false"
-        accept=".json">
+    <el-dialog title="上传角色卡" :visible.sync="uploadDialogVisible" width="500px" :close-on-click-modal="false">
+      <el-upload class="upload-demo" drag :action="uploadAction" :http-request="uploadFile"
+        :before-upload="beforeUpload" :show-file-list="false" accept=".json">
         <i class="el-icon-upload"></i>
         <div class="el-upload__text">将JSON文件拖到此处,或<em>点击上传</em></div>
         <div class="el-upload__tip" slot="tip">
@@ -134,11 +91,7 @@
     </el-dialog>
 
     <!-- 详情弹窗 -->
-    <el-dialog
-      title="角色卡详情"
-      :visible.sync="detailDialogVisible"
-      width="700px"
-      top="5vh">
+    <el-dialog title="角色卡详情" :visible.sync="detailDialogVisible" width="700px" top="5vh">
       <div v-if="currentCard" class="detail-container">
         <el-descriptions :column="1" border>
           <el-descriptions-item label="角色名称">
@@ -174,30 +127,15 @@
     </el-dialog>
 
     <!-- 配置弹窗 -->
-    <el-dialog
-      title="配置角色卡"
-      :visible.sync="configDialogVisible"
-      width="600px"
-      :close-on-click-modal="false">
-      <el-form
-        :model="configForm"
-        :rules="configRules"
-        ref="configFormRef"
-        label-width="120px">
+    <el-dialog title="配置角色卡" :visible.sync="configDialogVisible" width="600px" :close-on-click-modal="false">
+      <el-form :model="configForm" :rules="configRules" ref="configFormRef" label-width="120px">
 
         <el-form-item label="角色名称" prop="cardName">
-          <el-input
-            v-model="configForm.cardName"
-            placeholder="请输入角色名称"
-            maxlength="100"
-            show-word-limit />
+          <el-input v-model="configForm.cardName" placeholder="请输入角色名称" maxlength="100" show-word-limit />
         </el-form-item>
 
         <el-form-item label="用户名称" prop="userName">
-          <el-input
-            v-model="configForm.userName"
-            placeholder="请输入用户名称（对应角色卡中的{user}占位符）"
-            maxlength="100"
+          <el-input v-model="configForm.userName" placeholder="请输入用户名称（对应角色卡中的{user}占位符）" maxlength="100"
             show-word-limit>
             <template slot="prepend">{user}</template>
           </el-input>
@@ -208,10 +146,7 @@
         </el-form-item>
 
         <el-form-item label="角色昵称" prop="characterName">
-          <el-input
-            v-model="configForm.characterName"
-            placeholder="请输入角色昵称（对应角色卡中的{char}占位符）"
-            maxlength="100"
+          <el-input v-model="configForm.characterName" placeholder="请输入角色昵称（对应角色卡中的{char}占位符）" maxlength="100"
             show-word-limit>
             <template slot="prepend">{char}</template>
           </el-input>
@@ -222,12 +157,8 @@
         </el-form-item>
 
         <el-form-item label="人物描述" prop="characterDescription">
-          <el-input
-            type="textarea"
-            v-model="configForm.characterDescription"
-            :rows="3"
-            placeholder="请描述人物的外观特征（自动从角色卡填充）"
-            :disabled="isGeneratingKeywords">
+          <el-input type="textarea" v-model="configForm.characterDescription" :rows="3"
+            placeholder="请描述人物的外观特征（自动从角色卡填充）" :disabled="isGeneratingKeywords">
           </el-input>
           <div class="form-tip">
             <i class="el-icon-info"></i>
@@ -237,31 +168,18 @@
 
         <!-- AI生成关键词按钮 -->
         <div class="keyword-actions">
-          <el-button
-            size="small"
-            type="primary"
-            icon="el-icon-magic-stick"
-            :loading="isGeneratingKeywords"
-            :disabled="!configForm.characterDescription.trim() || isGeneratingKeywords"
-            @click="generateKeywords">
+          <el-button size="small" type="primary" icon="el-icon-magic-stick" :loading="isGeneratingKeywords"
+            :disabled="!configForm.characterDescription.trim() || isGeneratingKeywords" @click="generateKeywords">
             {{ isGeneratingKeywords ? '生成中...' : 'AI生成关键词' }}
           </el-button>
-          <el-button
-            size="small"
-            icon="el-icon-delete"
-            :disabled="isGeneratingKeywords"
-            @click="clearKeywords">
+          <el-button size="small" icon="el-icon-delete" :disabled="isGeneratingKeywords" @click="clearKeywords">
             清空
           </el-button>
         </div>
 
         <el-form-item label="初始提示词" prop="initialPrompt">
-          <el-input
-            type="textarea"
-            v-model="configForm.initialPrompt"
-            placeholder="请输入初始提示词（例如：发色: long silver hair, 面部: blue eyes, smile）"
-            :rows="6"
-            maxlength="2000"
+          <el-input type="textarea" v-model="configForm.initialPrompt"
+            placeholder="请输入初始提示词（例如：发色: long silver hair, 面部: blue eyes, smile）" :rows="6" maxlength="2000"
             show-word-limit />
           <div class="form-tip">
             <i class="el-icon-info"></i>
@@ -272,10 +190,7 @@
 
       <div slot="footer" class="dialog-footer">
         <el-button @click="configDialogVisible = false">取消</el-button>
-        <el-button
-          type="primary"
-          @click="saveConfig"
-          :loading="configSaving">
+        <el-button type="primary" @click="saveConfig" :loading="configSaving">
           保存配置
         </el-button>
       </div>
@@ -286,11 +201,14 @@
 <script>
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 import Cookies from 'js-cookie'
+import aiChatMixin from '@/mixins/aiChatMixin';
 
 export default {
   name: 'CharacterCard',
+  mixins: [aiChatMixin],
   data() {
     return {
+      aiMenuId: 'character',
       cardList: [],
       loading: false,
       uploadDialogVisible: false,
@@ -511,39 +429,27 @@ export default {
         return
       }
 
+
       this.isGeneratingKeywords = true
       this.configForm.initialPrompt = ''
 
+      var abortController = new AbortController();
+      const body = {
+        model: 'makeKey',
+        message: this.configForm.characterDescription,
+        context: []
+      };
+
       try {
-        const token = Cookies.get('token')
-        await fetchEventSource('/api/ai/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'token': token
-          },
-          body: JSON.stringify({
-            message: this.configForm.characterDescription,
-            chatList: [],
-            aiMenuCode: 'makeKey'
-          }),
-          onmessage: (msg) => {
-            if (msg.data) {
-              this.configForm.initialPrompt += msg.data
-            }
-          },
-          onerror: (err) => {
-            console.error('生成关键词失败:', err)
-            this.$message.error('生成关键词失败')
-            throw err
-          },
-          onclose: () => {
-            this.isGeneratingKeywords = false
-            if (this.configForm.initialPrompt) {
-              this.$message.success('关键词生成完成')
-            }
+        await this.fetchStream(body, (decodedValue) => {
+          this.configForm.initialPrompt += decodedValue;
+        }, () => {
+          this.isGeneratingKeywords = false
+          if (this.configForm.initialPrompt) {
+            this.$message.success('关键词生成完成')
           }
-        })
+        }, abortController.signal);
+
       } catch (error) {
         this.isGeneratingKeywords = false
         console.error('生成关键词错误:', error)
@@ -699,7 +605,7 @@ export default {
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08),
-              0 1px 4px rgba(0, 0, 0, 0.04);
+    0 1px 4px rgba(0, 0, 0, 0.04);
 
   /* 右上角悬浮菜单 */
   .card-menu {
@@ -743,7 +649,8 @@ export default {
   .avatar-wrapper {
     position: relative;
     width: 100%;
-    padding-top: 125%; /* 4:5 比例，更紧凑 */
+    padding-top: 125%;
+    /* 4:5 比例，更紧凑 */
     overflow: hidden;
     background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
 
@@ -786,12 +693,10 @@ export default {
       left: 0;
       right: 0;
       padding: 24px 16px 16px;
-      background: linear-gradient(
-        to top,
-        rgba(0, 0, 0, 0.85) 0%,
-        rgba(0, 0, 0, 0.65) 60%,
-        rgba(0, 0, 0, 0) 100%
-      );
+      background: linear-gradient(to top,
+          rgba(0, 0, 0, 0.85) 0%,
+          rgba(0, 0, 0, 0.65) 60%,
+          rgba(0, 0, 0, 0) 100%);
       z-index: 2;
       transition: all 0.3s;
 
@@ -831,8 +736,8 @@ export default {
   &:hover {
     transform: translateY(-8px);
     box-shadow: 0 16px 32px rgba(0, 0, 0, 0.15),
-                0 8px 16px rgba(0, 0, 0, 0.1),
-                0 0 0 1px rgba(102, 126, 234, 0.2);
+      0 8px 16px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgba(102, 126, 234, 0.2);
 
     .character-avatar {
       transform: scale(1.1);
@@ -848,12 +753,10 @@ export default {
     }
 
     .card-info {
-      background: linear-gradient(
-        to top,
-        rgba(0, 0, 0, 0.9) 0%,
-        rgba(0, 0, 0, 0.7) 60%,
-        rgba(0, 0, 0, 0) 100%
-      );
+      background: linear-gradient(to top,
+          rgba(0, 0, 0, 0.9) 0%,
+          rgba(0, 0, 0, 0.7) 60%,
+          rgba(0, 0, 0, 0) 100%);
 
       .card-name {
         color: #fff;
