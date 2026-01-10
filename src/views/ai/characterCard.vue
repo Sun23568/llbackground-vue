@@ -43,16 +43,17 @@
           :xs="24"
           :sm="12"
           :md="8"
-          :lg="6"
+          :lg="4"
           v-for="card in cardList"
           :key="card.id"
           class="card-col">
-          <el-card class="character-card" shadow="hover">
+          <div class="character-card" @click="handleMenuCommand({action: 'chat', card: card})">
             <!-- 右上角悬浮菜单 -->
             <el-dropdown
               trigger="click"
               class="card-menu"
-              @command="handleMenuCommand">
+              @command="handleMenuCommand"
+              @click.native.stop>
               <span class="el-dropdown-link">
                 <i class="el-icon-more"></i>
               </span>
@@ -82,22 +83,27 @@
               </el-dropdown-menu>
             </el-dropdown>
 
-            <!-- 卡片头部 -->
-            <div slot="header" class="card-header">
-              <span class="card-title">{{ card.cardName }}</span>
-            </div>
+            <!-- 角色头像 -->
+            <div class="avatar-wrapper">
+              <img
+                :src="card.avatar || 'https://via.placeholder.com/300x400?text=No+Image'"
+                :alt="card.cardName"
+                class="character-avatar">
 
-            <!-- 卡片内容 -->
-            <div class="card-content">
-              <div class="card-description">
-                {{ card.cardDescription || '暂无描述' }}
+              <!-- 悬停遮罩层 -->
+              <div class="avatar-overlay">
+                <i class="el-icon-chat-dot-round"></i>
               </div>
-              <div class="card-time">
-                <i class="el-icon-time"></i>
-                {{ card.createTime }}
+
+              <!-- 角色信息（浮在图片上） -->
+              <div class="card-info">
+                <h3 class="card-name">{{ card.cardName }}</h3>
+                <p class="card-description">
+                  {{ card.cardDescription || '暂无描述' }}
+                </p>
               </div>
             </div>
-          </el-card>
+          </div>
         </el-col>
       </el-row>
     </el-card>
@@ -139,7 +145,9 @@
             <el-tag type="primary">{{ currentCard.cardName }}</el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="角色描述">
-            {{ currentCard.cardDescription || '暂无描述' }}
+            <div class="description-content">
+              {{ currentCard.cardDescription || '暂无描述' }}
+            </div>
           </el-descriptions-item>
           <el-descriptions-item label="创建时间">
             <i class="el-icon-time"></i>
@@ -745,13 +753,14 @@ export default {
 
 /* 角色卡片 */
 .character-card {
-  height: 100%;
-  border-radius: 12px;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08),
-              0 1px 4px rgba(0, 0, 0, 0.04);
+  background: #fff;
+  border-radius: 16px;
   overflow: hidden;
   position: relative;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08),
+              0 1px 4px rgba(0, 0, 0, 0.04);
 
   /* 右上角悬浮菜单 */
   .card-menu {
@@ -765,28 +774,116 @@ export default {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
       background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(4px);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
       &:hover {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
-        transform: scale(1.05);
+        background: rgba(255, 255, 255, 1);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        transform: scale(1.1) rotate(90deg);
       }
 
       &:active {
-        transform: scale(0.95);
+        transform: scale(0.95) rotate(90deg);
       }
 
       i {
-        font-size: 16px;
+        font-size: 18px;
         color: #667eea;
-        font-weight: 600;
+        font-weight: 700;
+      }
+    }
+  }
+
+  /* 头像容器 */
+  .avatar-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: 125%; /* 4:5 比例，更紧凑 */
+    overflow: hidden;
+    background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+
+    .character-avatar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 悬停遮罩层 */
+    .avatar-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+      i {
+        font-size: 48px;
+        color: #fff;
+        transform: scale(0.5);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+    }
+
+    /* 角色信息（浮在图片上） */
+    .card-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 24px 16px 16px;
+      background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.85) 0%,
+        rgba(0, 0, 0, 0.65) 60%,
+        rgba(0, 0, 0, 0) 100%
+      );
+      z-index: 2;
+      transition: all 0.3s;
+
+      .card-name {
+        margin: 0 0 6px 0;
+        font-size: 17px;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s;
+      }
+
+      .card-description {
+        margin: 0;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.85);
+        line-height: 1.5;
+        white-space: pre-line;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s;
       }
     }
   }
@@ -794,101 +891,46 @@ export default {
   /* 卡片悬浮效果 */
   &:hover {
     transform: translateY(-8px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12),
-                0 6px 12px rgba(0, 0, 0, 0.08),
-                0 0 0 1px rgba(102, 126, 234, 0.1);
-  }
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.15),
+                0 8px 16px rgba(0, 0, 0, 0.1),
+                0 0 0 1px rgba(102, 126, 234, 0.2);
 
-  /* 头部渐变背景 */
-  ::v-deep .el-card__header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    padding: 16px 20px;
-    position: relative;
-
-    /* 添加装饰光效 */
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.5) 50%,
-        transparent 100%);
-      opacity: 0;
-      transition: opacity 0.4s;
+    .character-avatar {
+      transform: scale(1.1);
+      filter: brightness(1.05);
     }
 
-    &:hover::before {
+    .avatar-overlay {
       opacity: 1;
-    }
-  }
-
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    .card-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: #fff;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      letter-spacing: 0.5px;
-    }
-
-    .el-tag {
-      background: rgba(255, 255, 255, 0.2);
-      border-color: rgba(255, 255, 255, 0.3);
-      color: #fff;
-      font-weight: 500;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-  }
-
-  .card-content {
-    min-height: 120px;
-    padding: 20px;
-
-    .card-description {
-      margin-bottom: 16px;
-      font-size: 14px;
-      color: #606266;
-      line-height: 1.8;
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 3;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      transition: color 0.3s;
-    }
-
-    .card-time {
-      font-size: 12px;
-      color: #909399;
-      display: flex;
-      align-items: center;
-      transition: color 0.3s;
 
       i {
-        margin-right: 6px;
-        font-size: 14px;
+        transform: scale(1);
+      }
+    }
+
+    .card-info {
+      background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.9) 0%,
+        rgba(0, 0, 0, 0.7) 60%,
+        rgba(0, 0, 0, 0) 100%
+      );
+
+      .card-name {
+        color: #fff;
+        text-shadow: 0 2px 6px rgba(102, 126, 234, 0.8);
+      }
+
+      .card-description {
+        color: rgba(255, 255, 255, 0.95);
       }
     }
   }
 
-  /* 整体悬浮时内容微调 */
-  &:hover {
-    .card-description {
-      color: #303133;
-    }
-
-    .card-time {
-      color: #606266;
-    }
+  /* 点击动画 */
+  &:active {
+    transform: translateY(-4px) scale(0.98);
+    transition: all 0.1s;
   }
 }
 
@@ -926,6 +968,13 @@ export default {
 
 /* 详情弹窗 */
 .detail-container {
+  .description-content {
+    white-space: pre-line;
+    line-height: 1.6;
+    color: #606266;
+    word-break: break-word;
+  }
+
   .json-viewer-wrapper {
     border-radius: 8px;
     overflow: hidden;
