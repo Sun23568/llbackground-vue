@@ -149,27 +149,22 @@
               {{ currentCard.cardDescription || '暂无描述' }}
             </div>
           </el-descriptions-item>
+          <el-descriptions-item label="开场白" v-if="currentCard.firstMes">
+            <div class="description-content">
+              {{ currentCard.firstMes }}
+            </div>
+          </el-descriptions-item>
+          <el-descriptions-item label="场景" v-if="currentCard.scenario">
+            <el-tag type="success">{{ currentCard.scenario }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="对话示例" v-if="currentCard.mesExample">
+            <div class="description-content example-content">
+              {{ currentCard.mesExample }}
+            </div>
+          </el-descriptions-item>
           <el-descriptions-item label="创建时间">
             <i class="el-icon-time"></i>
             {{ currentCard.createTime }}
-          </el-descriptions-item>
-          <el-descriptions-item label="完整内容">
-            <div class="json-viewer-wrapper">
-              <div class="json-header">
-                <span class="json-title">
-                  <i class="el-icon-document"></i>
-                  JSON内容
-                </span>
-                <el-button
-                  type="primary"
-                  size="mini"
-                  icon="el-icon-document-copy"
-                  @click="copyJSON">
-                  复制
-                </el-button>
-              </div>
-              <div class="json-content" v-html="highlightJSON(currentCard.cardContent)"></div>
-            </div>
           </el-descriptions-item>
         </el-descriptions>
       </div>
@@ -209,6 +204,20 @@
           <div class="form-tip">
             <i class="el-icon-info"></i>
             此名称将替换角色卡中的 {user} 占位符
+          </div>
+        </el-form-item>
+
+        <el-form-item label="角色昵称" prop="characterName">
+          <el-input
+            v-model="configForm.characterName"
+            placeholder="请输入角色昵称（对应角色卡中的{char}占位符）"
+            maxlength="100"
+            show-word-limit>
+            <template slot="prepend">{char}</template>
+          </el-input>
+          <div class="form-tip">
+            <i class="el-icon-info"></i>
+            此名称将替换角色卡中的 {char} 占位符，用于AI对话时称呼角色
           </div>
         </el-form-item>
 
@@ -297,6 +306,7 @@ export default {
         id: '',
         cardName: '',
         userName: '',
+        characterName: '',
         characterDescription: '',
         initialPrompt: ''
       },
@@ -410,78 +420,6 @@ export default {
     },
 
     /**
-     * 格式化JSON显示
-     */
-    formatJSON(jsonStr) {
-      if (!jsonStr) return ''
-      try {
-        const obj = JSON.parse(jsonStr)
-        return JSON.stringify(obj, null, 2)
-      } catch (e) {
-        return jsonStr
-      }
-    },
-
-    /**
-     * JSON语法高亮
-     */
-    highlightJSON(jsonStr) {
-      if (!jsonStr) return ''
-      try {
-        const obj = JSON.parse(jsonStr)
-        const formatted = JSON.stringify(obj, null, 2)
-
-        // 语法高亮处理
-        let highlighted = formatted
-          // 处理字符串键（带引号的键）
-          .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*")(\s*:)/g, '<span class="json-key">$1</span>$3')
-          // 处理字符串值
-          .replace(/:\s*("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*")/g, ': <span class="json-string">$1</span>')
-          // 处理数字
-          .replace(/:\s*(-?\d+\.?\d*)/g, ': <span class="json-number">$1</span>')
-          // 处理布尔值
-          .replace(/:\s*(true|false)/g, ': <span class="json-boolean">$1</span>')
-          // 处理null
-          .replace(/:\s*(null)/g, ': <span class="json-null">$1</span>')
-
-        // 添加行号
-        const lines = highlighted.split('\n')
-        const numberedLines = lines.map((line, index) => {
-          return `<div class="json-line"><span class="line-number">${index + 1}</span><span class="line-content">${line}</span></div>`
-        }).join('')
-
-        return numberedLines
-      } catch (e) {
-        return `<pre>${jsonStr}</pre>`
-      }
-    },
-
-    /**
-     * 复制JSON内容
-     */
-    copyJSON() {
-      if (!this.currentCard || !this.currentCard.cardContent) {
-        this.$message.warning('没有可复制的内容')
-        return
-      }
-
-      try {
-        const formatted = this.formatJSON(this.currentCard.cardContent)
-        const textarea = document.createElement('textarea')
-        textarea.value = formatted
-        textarea.style.position = 'fixed'
-        textarea.style.opacity = '0'
-        document.body.appendChild(textarea)
-        textarea.select()
-        document.execCommand('copy')
-        document.body.removeChild(textarea)
-        this.$message.success('复制成功！')
-      } catch (e) {
-        this.$message.error('复制失败')
-      }
-    },
-
-    /**
      * 统一处理菜单命令
      */
     handleMenuCommand(command) {
@@ -524,6 +462,7 @@ export default {
         id: card.id,
         cardName: card.cardName,
         userName: card.userName || '',
+        characterName: card.characterName || card.cardName,
         characterDescription: card.cardDescription || '',
         initialPrompt: card.initialPrompt || ''
       }
@@ -973,126 +912,16 @@ export default {
     line-height: 1.6;
     color: #606266;
     word-break: break-word;
+    max-height: 200px;
+    overflow-y: auto;
   }
 
-  .json-viewer-wrapper {
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-
-    .json-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 16px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-
-      .json-title {
-        font-size: 14px;
-        font-weight: 600;
-        color: #fff;
-        display: flex;
-        align-items: center;
-
-        i {
-          margin-right: 6px;
-          font-size: 16px;
-        }
-      }
-
-      .el-button {
-        background: rgba(255, 255, 255, 0.2);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        color: #fff;
-        transition: all 0.3s;
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.3);
-          border-color: rgba(255, 255, 255, 0.5);
-          transform: translateY(-2px);
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-      }
-    }
-
-    .json-content {
-      max-height: 450px;
-      overflow-y: auto;
-      background: #1e1e1e;
-      padding: 16px 0;
-      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-      font-size: 13px;
-      line-height: 1.6;
-
-      /* 滚动条样式 */
-      &::-webkit-scrollbar {
-        width: 8px;
-      }
-
-      &::-webkit-scrollbar-track {
-        background: #2d2d2d;
-      }
-
-      &::-webkit-scrollbar-thumb {
-        background: #555;
-        border-radius: 4px;
-
-        &:hover {
-          background: #666;
-        }
-      }
-
-      .json-line {
-        display: flex;
-        padding: 0 16px;
-        transition: background 0.2s;
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.05);
-        }
-
-        .line-number {
-          display: inline-block;
-          width: 40px;
-          text-align: right;
-          margin-right: 16px;
-          color: #858585;
-          user-select: none;
-          flex-shrink: 0;
-        }
-
-        .line-content {
-          flex: 1;
-          color: #d4d4d4;
-          white-space: pre;
-        }
-      }
-
-      /* JSON语法高亮颜色 */
-      ::v-deep .json-key {
-        color: #9cdcfe;
-        font-weight: 500;
-      }
-
-      ::v-deep .json-string {
-        color: #ce9178;
-      }
-
-      ::v-deep .json-number {
-        color: #b5cea8;
-      }
-
-      ::v-deep .json-boolean {
-        color: #569cd6;
-        font-weight: 600;
-      }
-
-      ::v-deep .json-null {
-        color: #808080;
-        font-style: italic;
-      }
-    }
+  .example-content {
+    max-height: 300px;
+    font-size: 13px;
+    background: #f5f7fa;
+    padding: 12px;
+    border-radius: 4px;
   }
 }
 
