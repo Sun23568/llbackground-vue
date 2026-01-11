@@ -4,25 +4,23 @@
  * 使用方法：
  * 1. 在组件中引入：import aiChatMixin from '@/mixins/aiChatMixin'
  * 2. 在 export default 中添加：mixins: [aiChatMixin]
- * 3. 在 data() 中提供 aiMenuId: 你的菜单code
+ * 3. 在 props 中提供 characterCardId: 角色卡ID
  *
- * 必须提供的配置：
- * - aiMenuId: AI菜单的code（例如：'girlAdventure'）
+ * 必须由父组件提供（通过props）：
+ * - characterCardId: 角色卡ID（用于对话和保存历史记录）
  *
  * 可选覆盖的配置：
- * - contextSize: 上下文大小（默认从后端获取）
- * - initialCharacterState: 初始角色状态（默认从后端获取）
+ * - contextSize: 上下文大小（默认10）
+ * - ollamaModelId: 模型ID（默认'luoli'）
  */
 
 export default {
   data() {
     return {
       // 基础配置
-      ollamaModelId: '',
-      contextSize: 5,
+      ollamaModelId: 'luoli',
+      contextSize: 10,
       backgroundImageUrl: '',
-      initialCharacterState: null,
-      characterCardId: null,
 
       // 对话相关
       question: '',
@@ -60,16 +58,6 @@ export default {
   },
 
   mounted() {
-    // 检查必须的配置
-    if (!this.aiMenuId) {
-      console.error('aiChatMixin: aiMenuId is required!');
-      this.$message.error('页面配置错误：缺少 aiMenuId');
-      return;
-    }
-
-    // 加载背景图和配置
-    this.fetchBackground();
-
     // 初始化滚动条
     this.$nextTick(() => {
       this.updateScrollbar();
@@ -77,25 +65,6 @@ export default {
   },
 
   methods: {
-    /**
-     * 获取背景图和AI配置
-     */
-    async fetchBackground() {
-      try {
-        const response = await this.api({
-          url: '/ai/config/background-image?aiMenuCode=' + this.aiMenuId,
-          method: 'get'
-        });
-        this.backgroundImageUrl = response.backgroundImage;
-        this.contextSize = response.contextSize;
-        this.initialCharacterState = response.initialCharacterState || null;
-        this.characterCardId = response.characterCardId || null;
-        this.ollamaModelId = response.ollamaModelId || 'luoli';
-      } catch (error) {
-        console.error('加载背景图片失败', error);
-      }
-    },
-
     /**
      * 发送问题
      */
@@ -129,8 +98,7 @@ export default {
         message: currentQuestion,
         context: contextList,
         characterCardId: this.characterCardId,
-        model: this.ollamaModelId,
-        aiMenuCode: this.aiMenuId
+        model: this.ollamaModelId
       };
 
       let isSuccess = false;
@@ -368,7 +336,7 @@ export default {
         model: 'makeKey',
         message: this.response,
         context: context,
-        aiMenuCode: this.aiMenuId
+        characterCardId: this.characterCardId
       };
 
       try {
@@ -406,7 +374,7 @@ export default {
           headers: {
             'Content-Type': 'application/json;charset=UTF-8',
           },
-          body: JSON.stringify({ keyWord: finalKeywords, aiMenuCode: this.aiMenuId })
+          body: JSON.stringify({ keyWord: finalKeywords, characterCardId: this.characterCardId })
         };
 
         if (this.abortController) {
@@ -582,7 +550,7 @@ export default {
         model: 'makeKey',
         message: this.response,
         context: context,
-        aiMenuCode: this.aiMenuId
+        characterCardId: this.characterCardId
       };
 
       try {

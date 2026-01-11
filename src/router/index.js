@@ -61,31 +61,10 @@ export const asyncRouterMap = [
   {
     path: '/ai',
     component: Layout,
-    redirect: '/ai/girlAdventure',
+    redirect: '/ai/characterCard',
     name: 'AI模块',
     meta: { title: 'AI模块', icon: 'ai-line' },
     children: [
-      {
-        path: 'girlAdventure',
-        name: '小飞',
-        component: _import('ai/girlAdventure'),
-        meta: { title: '小飞', icon: 'girl-line' },
-        menu: 'girlAdventure'
-      },
-      {
-        path: 'girlAdventureAutoDL',
-        name: '小飞(AutoDL)',
-        component: _import('ai/girlAdventureAutoDL'),
-        meta: { title: '小飞(AutoDL)', icon: 'girl-autodl-line' },
-        menu: 'girlAdventureAutoDL'
-      },
-      {
-        path: 'driverGuye',
-        name: '赛车手顾野',
-        component: _import('ai/driverGuye'),
-        meta: { title: '赛车手顾野', icon: 'guye-line' },
-        menu: 'driverGuye'
-      },
       {
         path: 'characterCard',
         name: '角色卡管理',

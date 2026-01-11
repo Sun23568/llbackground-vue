@@ -234,17 +234,15 @@ export default {
 
   props: {
     // ============ 必填配置 ============
-    aiMenuId: {
-      type: String,
-      required: true,
-      validator: value => value.trim().length > 0
-    },
     pageTitle: {
       type: String,
       required: true
     },
-
-    // ============ 可选配置 ============
+    // 角色卡ID（必填）
+    characterCardId: {
+      type: String,
+      required: true
+    },
     // 是否启用图片生成功能
     enableImageGeneration: {
       type: Boolean,
@@ -344,18 +342,6 @@ export default {
         generateImage: this.generateImage,
         cancel: this.cancelGeneration
       };
-    }
-  },
-
-  watch: {
-    // 监听 aiMenuId 变化，重新加载配置
-    aiMenuId: {
-      immediate: true,
-      handler(newVal) {
-        if (newVal) {
-          this.fetchBackground();
-        }
-      }
     }
   }
 };
