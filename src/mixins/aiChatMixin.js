@@ -40,6 +40,7 @@ export default {
       // 关键词管理
       keywordMap: {},
       previousKeywordMap: {},
+      initialCharacterState: '', // 初始角色状态提示词（从角色卡的initialPrompt获取）
 
       // 控制器
       abortController: null,
@@ -69,6 +70,37 @@ export default {
   },
 
   methods: {
+    /**
+     * 初始化角色开场白
+     * @param {String} firstMes - 角色卡的开场白
+     */
+    initFirstMessage(firstMes) {
+      if (!firstMes || !firstMes.trim()) {
+        return;
+      }
+
+      // 添加AI的开场白消息
+      const aiMessage = {
+        role: 'ai',
+        content: firstMes,
+        timestamp: new Date(),
+        isStreaming: false
+      };
+      this.messages.push(aiMessage);
+
+      // 同时添加到 chatList，用于后端上下文
+      this.chatList.push(firstMes);
+
+      // 更新状态
+      this.response = firstMes;
+      this.isResponseComplete = true;
+
+      // 滚动到开场白
+      this.$nextTick(() => {
+        this.updateScrollbar();
+      });
+    },
+
     /**
      * 发送问题
      */
@@ -385,6 +417,7 @@ export default {
 
       // 构建上下文
       const context = [];
+      console.log('Previous Keyword Map:', this.previousKeywordMap);
       if (Object.keys(this.keywordMap).length > 0) {
         const currentKeywords = Object.entries(this.keywordMap)
           .map(([key, value]) => `${key}: ${value}`)
@@ -432,12 +465,22 @@ export default {
       try {
         const finalKeywords = Object.values(this.keywordMap).join(', ');
 
+        const requestBody = {
+          keyWord: finalKeywords,
+          characterCardId: this.characterCardId
+        };
+
+        // 如果有初始角色状态，添加到请求中
+        if (this.initialCharacterState) {
+          requestBody.initialCharacterState = this.initialCharacterState;
+        }
+
         const fetchOptions = {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json;charset=UTF-8',
           },
-          body: JSON.stringify({ keyWord: finalKeywords, characterCardId: this.characterCardId })
+          body: JSON.stringify(requestBody)
         };
 
         if (this.abortController) {
@@ -598,6 +641,7 @@ export default {
 
       // 使用上一次的关键词作为基础
       const context = [];
+      console.log('Previous Keyword Map:', this.previousKeywordMap);
       if (Object.keys(this.previousKeywordMap).length > 0) {
         const previousKeywords = Object.entries(this.previousKeywordMap)
           .map(([key, value]) => `${key}: ${value}`)
@@ -612,8 +656,7 @@ export default {
       const body = {
         model: 'makeKey',
         message: this.response,
-        context: context,
-        characterCardId: this.characterCardId
+        context: context
       };
 
       try {

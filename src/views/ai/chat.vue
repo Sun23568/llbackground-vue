@@ -1,5 +1,6 @@
 <template>
   <AiChatContainer
+    ref="chatContainer"
     :characterCardId="cardId"
     :pageTitle="pageTitle"
     :customBackgroundImage="backgroundImage"
@@ -28,7 +29,9 @@ export default {
       aiAvatar: '',
       aiName: 'AI',
       userAvatar: '',
-      userName: 'UserName' // 默认值，将从角色卡配置获取
+      userName: 'UserName', // 默认值，将从角色卡配置获取
+      firstMes: '', // 角色卡的开场白
+      initialPrompt: '' // 初始提示词（用于图片生成）
     }
   },
   created() {
@@ -87,6 +90,27 @@ export default {
           // 设置用户名称（从角色卡的userName配置获取）
           if (card.userName) {
             this.userName = card.userName
+          }
+
+          // 初始化角色开场白
+          if (card.firstMes) {
+            this.firstMes = card.firstMes
+            // 等待组件挂载完成后初始化开场白
+            this.$nextTick(() => {
+              if (this.$refs.chatContainer) {
+                this.$refs.chatContainer.initFirstMessage(card.firstMes)
+              }
+            })
+          }
+
+          // 设置初始提示词（用于图片生成）
+          if (card.initialPrompt) {
+            this.initialPrompt = card.initialPrompt
+            this.$nextTick(() => {
+              if (this.$refs.chatContainer) {
+                this.$refs.chatContainer.initialCharacterState = card.initialPrompt
+              }
+            })
           }
         }
       } catch (error) {
