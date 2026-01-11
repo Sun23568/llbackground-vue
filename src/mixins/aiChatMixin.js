@@ -21,8 +21,9 @@ export default {
 
       // 对话相关
       question: '',
-      response: '',
-      chatList: [],
+      response: '', // 保留用于向后兼容（图片生成功能使用）
+      messages: [], // 新增：气泡消息列表 { role: 'user'/'ai', content: '', timestamp: Date, isStreaming: false }
+      chatList: [], // 保留用于上下文传递
       isLoading: false,
       isResponseComplete: false,
       lastQuestion: '',
@@ -79,10 +80,39 @@ export default {
       }
 
       this.isResponseComplete = false;
-      const oldResponse = this.response;
       const currentQuestion = this.question;
-      this.response = '';
 
+      // 1. 立即添加用户消息到气泡列表
+      const userMessage = {
+        role: 'user',
+        content: currentQuestion,
+        timestamp: new Date()
+      };
+      this.messages.push(userMessage);
+
+      // 立即滚动到用户消息
+      this.$nextTick(() => {
+        this.updateScrollbar();
+      });
+
+      // 2. 创建一个空的AI消息（用于流式更新）
+      const aiMessage = {
+        role: 'ai',
+        content: '',
+        timestamp: new Date(),
+        isStreaming: true
+      };
+      this.messages.push(aiMessage);
+
+      // 再次滚动到AI消息位置
+      this.$nextTick(() => {
+        this.updateScrollbar();
+      });
+
+      // 清空输入框
+      this.question = '';
+
+      // 更新 chatList（用于上下文）
       if (this.chatList.length > this.contextSize) {
         this.chatList.shift();
       }
@@ -110,33 +140,40 @@ export default {
         await this.fetchStream(
           body,
           (decodedValue) => {
-            this.response += decodedValue;
+            // 流式更新AI消息内容
+            aiMessage.content += decodedValue;
+            this.response += decodedValue; // 保留用于图片生成
             this.throttledUpdateScrollbar();
           },
           () => {
             // 检测业务异常
-            const isBusinessError = this.response.includes('【对话模型异常') ||
-              this.response.includes('请联系孙老六') ||
-              this.response.includes('业务异常') ||
-              this.response.includes('系统错误');
+            const isBusinessError = aiMessage.content.includes('【对话模型异常') ||
+              aiMessage.content.includes('请联系孙老六') ||
+              aiMessage.content.includes('业务异常') ||
+              aiMessage.content.includes('系统错误');
 
             if (isBusinessError) {
-              this.response = oldResponse;
+              // 失败：删除刚添加的两条消息
+              this.messages.pop(); // 删除AI消息
+              this.messages.pop(); // 删除用户消息
+              this.response = '';
               this.question = currentQuestion;
               this.isLoading = false;
-              this.isResponseComplete = oldResponse !== '';
+              this.isResponseComplete = this.messages.length > 0;
               this.$message.error('对话生成失败，请重试');
               return;
             }
 
+            // 成功：标记AI消息流式完成
+            aiMessage.isStreaming = false;
             isSuccess = true;
+
+            // 更新 chatList
             this.chatList.push(currentQuestion);
-            this.chatList.push(this.response);
+            this.chatList.push(aiMessage.content);
 
             this.isLoading = false;
             this.isResponseComplete = true;
-            this.question = '';
-            this.lastQuestion = this.chatList[this.chatList.length - 1].question;
 
             this.$nextTick(() => {
               this.updateScrollbar();
@@ -145,7 +182,10 @@ export default {
           this.abortController.signal
         );
       } catch (error) {
-        this.response = oldResponse;
+        // 失败：删除刚添加的两条消息
+        this.messages.pop(); // 删除AI消息
+        this.messages.pop(); // 删除用户消息
+        this.response = '';
         this.question = currentQuestion;
 
         if (error.name === 'AbortError') {
@@ -154,7 +194,7 @@ export default {
           this.$message.error('对话生成失败，请重试');
         }
         this.isLoading = false;
-        this.isResponseComplete = oldResponse !== '';
+        this.isResponseComplete = this.messages.length > 0;
       } finally {
         this.abortController = null;
       }
@@ -210,7 +250,9 @@ export default {
      * 兼容 HTTP 和 HTTPS 环境的双重降级策略
      */
     copyResponse() {
-      const text = this.response;
+      // 查找最后一条AI消息
+      const lastAiMessage = [...this.messages].reverse().find(msg => msg.role === 'ai');
+      const text = lastAiMessage ? lastAiMessage.content : '';
 
       // 策略 1：尝试使用现代 Clipboard API（仅 HTTPS）
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -270,14 +312,25 @@ export default {
      * 清空对话
      */
     clearResponse() {
-      this.response = '';
-      this.imageUrl = '';
-      this.keyWord = '';
-      this.keywordMap = {};
-      this.previousKeywordMap = {};
-      this.isResponseComplete = false;
-      this.$nextTick(() => {
-        this.updateScrollbar();
+      this.$confirm('确定要清空所有对话记录吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        this.messages = [];
+        this.chatList = [];
+        this.response = '';
+        this.imageUrl = '';
+        this.keyWord = '';
+        this.keywordMap = {};
+        this.previousKeywordMap = {};
+        this.isResponseComplete = false;
+        this.$message.success('已清空所有对话');
+        this.$nextTick(() => {
+          this.updateScrollbar();
+        });
+      }).catch(() => {
+        // 取消操作
       });
     },
 
@@ -285,19 +338,27 @@ export default {
      * 撤销上次对话
      */
     undoLastConversation() {
-      if (this.chatList.length >= 2) {
-        // Remove last AI response and user question
-        this.chatList.pop(); // AI response
-        this.chatList.pop(); // User question
+      if (this.messages.length >= 2) {
+        // 删除最后两条消息（AI回复 + 用户问题）
+        this.messages.pop(); // AI消息
+        this.messages.pop(); // 用户消息
 
-        if (this.chatList.length > 0) {
-          this.response = this.chatList[this.chatList.length - 1];
-        } else {
-          this.response = '';
+        // 同步更新 chatList
+        if (this.chatList.length >= 2) {
+          this.chatList.pop();
+          this.chatList.pop();
         }
 
-        this.isResponseComplete = this.chatList.length > 0;
+        // 更新 response（用于图片生成）
+        const lastAiMessage = [...this.messages].reverse().find(msg => msg.role === 'ai');
+        this.response = lastAiMessage ? lastAiMessage.content : '';
+
+        this.isResponseComplete = this.messages.length > 0;
         this.$message.success('已撤销上次对话');
+
+        this.$nextTick(() => {
+          this.updateScrollbar();
+        });
       } else {
         this.$message.info('没有可以撤销的对话');
       }
@@ -630,38 +691,65 @@ export default {
       }
       this.scrollUpdateTimer = setTimeout(() => {
         this.updateScrollbar();
-      }, 100);
+      }, 50); // 减少节流时间从100ms到50ms，更流畅
     },
 
     /**
-     * 更新滚动条
+     * 更新滚动条（滚动到底部）
      */
-    updateScrollbar() {
+    updateScrollbar(smooth = false) {
       this.$nextTick(() => {
-        if (this.$refs.responseScrollbar) {
-          let scrollbarInstance = null;
+        // 多次尝试以确保滚动成功
+        const scrollToBottom = () => {
+          if (this.$refs.responseScrollbar) {
+            let scrollbarInstance = null;
 
-          if (this.$refs.responseScrollbar.simpleBar) {
-            scrollbarInstance = this.$refs.responseScrollbar.simpleBar;
-          } else if (this.$refs.responseScrollbar.$el && this.$refs.responseScrollbar.$el.SimpleBar) {
-            scrollbarInstance = this.$refs.responseScrollbar.$el.SimpleBar;
-          } else if (this.$refs.responseScrollbar.SimpleBar) {
-            scrollbarInstance = this.$refs.responseScrollbar.SimpleBar;
-          }
+            // 尝试多种方式获取 SimpleBar 实例
+            if (this.$refs.responseScrollbar.simpleBar) {
+              scrollbarInstance = this.$refs.responseScrollbar.simpleBar;
+            } else if (this.$refs.responseScrollbar.$el && this.$refs.responseScrollbar.$el.SimpleBar) {
+              scrollbarInstance = this.$refs.responseScrollbar.$el.SimpleBar;
+            } else if (this.$refs.responseScrollbar.SimpleBar) {
+              scrollbarInstance = this.$refs.responseScrollbar.SimpleBar;
+            }
 
-          if (scrollbarInstance) {
-            scrollbarInstance.recalculate();
-            const scrollElement = scrollbarInstance.getScrollElement();
-            if (scrollElement) {
-              scrollElement.scrollTop = scrollElement.scrollHeight;
-            }
-          } else {
-            const contentEl = document.querySelector('.response-scrollbar .simplebar-content-wrapper');
-            if (contentEl) {
-              contentEl.scrollTop = contentEl.scrollHeight;
+            if (scrollbarInstance) {
+              // 重新计算滚动条
+              scrollbarInstance.recalculate();
+              const scrollElement = scrollbarInstance.getScrollElement();
+              if (scrollElement) {
+                // 滚动到底部
+                if (smooth) {
+                  scrollElement.scrollTo({
+                    top: scrollElement.scrollHeight,
+                    behavior: 'smooth'
+                  });
+                } else {
+                  scrollElement.scrollTop = scrollElement.scrollHeight;
+                }
+              }
+            } else {
+              // 备用方案：直接查找滚动元素
+              const contentEl = document.querySelector('.response-scrollbar .simplebar-content-wrapper');
+              if (contentEl) {
+                if (smooth) {
+                  contentEl.scrollTo({
+                    top: contentEl.scrollHeight,
+                    behavior: 'smooth'
+                  });
+                } else {
+                  contentEl.scrollTop = contentEl.scrollHeight;
+                }
+              }
             }
           }
-        }
+        };
+
+        // 立即执行一次
+        scrollToBottom();
+
+        // 100ms后再执行一次，确保DOM完全渲染
+        setTimeout(scrollToBottom, 100);
       });
     }
   }

@@ -13,30 +13,58 @@
           <SimpleBar class="response-scrollbar" ref="responseScrollbar" data-simplebar-auto-hide="false">
             <div class="response-area" id="response">
               <!-- 空状态 -->
-              <div v-if="!response && !isLoading" class="empty-state">
+              <div v-if="messages.length === 0 && !isLoading" class="empty-state">
                 <slot name="empty-state">
                   <i class="el-icon-chat-dot-round"></i>
                   <p>{{ emptyText }}</p>
                 </slot>
               </div>
 
-              <!-- 加载状态 -->
-              <div v-else-if="isLoading && !response" class="loading-state">
-                <slot name="loading-state">
-                  <div class="loading-animation">
-                    <div class="dot"></div>
-                    <div class="dot"></div>
-                    <div class="dot"></div>
-                  </div>
-                  <p>{{ loadingText }}</p>
-                </slot>
-              </div>
+              <!-- 消息列表（RPG风格） -->
+              <div v-else class="message-list">
+                <div
+                  v-for="(message, index) in messages"
+                  :key="index"
+                  class="message-item">
 
-              <!-- 回答内容 -->
-              <div v-else class="response-content">
-                <slot name="response-content" :response="response">
-                  {{ response }}
-                </slot>
+                  <!-- 头像 -->
+                  <div class="message-avatar">
+                    <img
+                      v-if="message.role === 'user'"
+                      :src="userAvatar || '/static/img/user-avatar.png'"
+                      alt="用户头像"
+                      class="avatar-img">
+                    <img
+                      v-else
+                      :src="aiAvatar || customBackgroundImage || '/static/img/ai-avatar.png'"
+                      alt="AI头像"
+                      class="avatar-img">
+                  </div>
+
+                  <!-- 消息内容 -->
+                  <div class="message-wrapper">
+                    <!-- 角色名称 -->
+                    <div class="message-header">
+                      <span class="sender-name">{{ message.role === 'user' ? userName : aiName }}</span>
+                      <!-- AI正在输入提示 -->
+                      <span v-if="message.role === 'ai' && message.isStreaming" class="typing-indicator">
+                        正在输入
+                        <span class="typing-dots">
+                          <span class="dot"></span>
+                          <span class="dot"></span>
+                          <span class="dot"></span>
+                        </span>
+                      </span>
+                    </div>
+
+                    <!-- 消息文本 -->
+                    <div class="message-content">
+                      {{ message.content }}
+                      <!-- 流式输入中的光标 -->
+                      <span v-if="message.isStreaming" class="streaming-cursor">▋</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </SimpleBar>
@@ -257,6 +285,28 @@ export default {
     ollamaModelId: {
       type: String,
       default: ''
+    },
+
+    // ============ 头像和名称配置 ============
+    // 用户头像URL（从当前登录用户获取）
+    userAvatar: {
+      type: String,
+      default: ''
+    },
+    // AI头像URL（从角色卡配置获取）
+    aiAvatar: {
+      type: String,
+      default: ''
+    },
+    // 用户名称（从角色卡的userName字段获取）
+    userName: {
+      type: String,
+      default: 'UserName'
+    },
+    // AI名称（从角色卡的cardName字段获取）
+    aiName: {
+      type: String,
+      default: 'charName'
     },
 
     // ============ 文案配置 ============

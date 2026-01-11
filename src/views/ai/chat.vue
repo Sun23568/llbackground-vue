@@ -4,6 +4,10 @@
     :pageTitle="pageTitle"
     :customBackgroundImage="backgroundImage"
     :ollamaModelId="ollamaModelId"
+    :userAvatar="userAvatar"
+    :userName="userName"
+    :aiAvatar="aiAvatar"
+    :aiName="aiName"
   />
 </template>
 
@@ -20,7 +24,11 @@ export default {
       pageTitle: '角色对话',
       backgroundImage: '',
       cardId: '',
-      ollamaModelId: 'jiuguan'
+      ollamaModelId: 'jiuguan',
+      aiAvatar: '',
+      aiName: 'AI',
+      userAvatar: '',
+      userName: 'UserName' // 默认值，将从角色卡配置获取
     }
   },
   created() {
@@ -39,6 +47,18 @@ export default {
       this.$message.error('缺少角色卡信息')
       this.$router.push('/ai/characterCard')
     }
+    // 获取用户头像
+    const avatarId = this.$store.state.user.avatar;
+    if (avatarId) {
+      this.api({
+        url: "/sa/avatar?avatarId=" + avatarId,
+        method: "get"
+      }).then(data => {
+        this.userAvatar = data;  // 修复：使用 this 而不是 _this
+      }).catch(error => {
+        console.error('获取用户头像失败:', error);
+      });
+    }
   },
   methods: {
     /**
@@ -51,13 +71,27 @@ export default {
           method: 'get'
         })
 
-        // 设置背景图片为角色卡的avatar
-        if (card && card.avatar) {
-          this.backgroundImage = card.avatar
+        if (card) {
+          // 设置背景图片
+          if (card.avatar) {
+            this.backgroundImage = card.avatar
+            // AI头像使用角色卡头像
+            this.aiAvatar = card.avatar
+          }
+
+          // 设置AI名称（从角色卡的cardName获取）
+          if (card.characterName) {
+            this.aiName = card.characterName
+          }
+
+          // 设置用户名称（从角色卡的userName配置获取）
+          if (card.userName) {
+            this.userName = card.userName
+          }
         }
       } catch (error) {
         console.error('获取角色卡详情失败:', error)
-        // 失败也不影响对话功能，只是没有背景图片
+        // 失败也不影响对话功能，只是没有背景图片和名称
       }
     }
   }
