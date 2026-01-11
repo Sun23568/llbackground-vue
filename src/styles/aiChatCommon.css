@@ -14,8 +14,9 @@
   text-rendering: optimizeLegibility;
 }
 
-/* 页面容器 */
+/* 页面容器 - 双层毛玻璃效果 */
 .page-container {
+  /* 模糊背景层(铺满) */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -27,16 +28,49 @@
   align-items: center;
   padding: 20px;
   position: relative;
+  /* 应用模糊效果到背景 */
+  overflow: hidden;
 }
 
+/* 模糊背景层的滤镜效果 */
 .page-container::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  /* 继承父容器的背景图片 */
+  background-image: inherit;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  /* 应用强烈模糊 */
+  filter: blur(20px) brightness(0.85);
+  /* 轻微缩放防止边缘白边 */
+  transform: scale(1.05);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* 完整图片层(居中展示) */
+.page-container::after {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.35); /* Dark overlay */
+  /* 继承父容器的背景图片 */
+  background-image: inherit;
+  /* 完整显示图片,不裁剪 */
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  /* 适度透明,与模糊背景融合 */
+  opacity: 0.95;
+  z-index: 1;
   pointer-events: none;
 }
 
@@ -49,7 +83,7 @@
   grid-template-columns: 1fr;
   gap: 24px;
   position: relative;
-  z-index: 1;
+  z-index: 10; /* 确保在背景层之上 */
   transition: all 0.4s ease;
 }
 
