@@ -338,8 +338,7 @@ export default {
       const body = {
         model: 'makeKey',
         message: this.response,
-        context: context,
-        characterCardId: this.characterCardId
+        context: context
       };
 
       try {
