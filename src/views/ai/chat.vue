@@ -3,6 +3,7 @@
     :characterCardId="cardId"
     :pageTitle="pageTitle"
     :customBackgroundImage="backgroundImage"
+    :ollamaModelId="ollamaModelId"
   />
 </template>
 
@@ -18,7 +19,8 @@ export default {
     return {
       pageTitle: '角色对话',
       backgroundImage: '',
-      cardId: ''
+      cardId: '',
+      ollamaModelId: 'jiuguan'
     }
   },
   created() {

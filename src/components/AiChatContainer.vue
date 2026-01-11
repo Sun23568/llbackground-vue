@@ -253,6 +253,11 @@ export default {
       type: String,
       default: ''
     },
+    // ollama模型ID
+    ollamaModelId: {
+      type: String,
+      default: ''
+    },
 
     // ============ 文案配置 ============
     emptyText: {

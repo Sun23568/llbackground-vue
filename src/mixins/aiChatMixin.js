@@ -11,14 +11,11 @@
  *
  * 可选覆盖的配置：
  * - contextSize: 上下文大小（默认10）
- * - ollamaModelId: 模型ID（默认'luoli'）
  */
 
 export default {
   data() {
     return {
-      // 基础配置
-      ollamaModelId: 'luoli',
       contextSize: 10,
       backgroundImageUrl: '',
 
@@ -55,6 +52,12 @@ export default {
         { title: '生成图片', description: 'ComfyUI绘制中' }
       ]
     };
+  },
+  computed: {
+    actualOllamaModelId() {
+      // 如果组件有传入 ollamaModelId，则使用它；否则使用默认值 'luoli'
+      return this.ollamaModelId || 'luoli';
+    }
   },
 
   mounted() {
@@ -98,7 +101,7 @@ export default {
         message: currentQuestion,
         context: contextList,
         characterCardId: this.characterCardId,
-        model: this.ollamaModelId
+        model: this.actualOllamaModelId
       };
 
       let isSuccess = false;
