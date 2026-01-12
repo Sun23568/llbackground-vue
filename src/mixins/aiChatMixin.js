@@ -79,20 +79,31 @@ export default {
         return;
       }
 
+      // 替换占位符：{{user}} 或 {user} → 用户名，{{char}} 或 {char} → 角色名
+      let processedMessage = firstMes;
+      if (this.userName) {
+        processedMessage = processedMessage.replace(/\{\{user\}\}/gi, this.userName);
+        processedMessage = processedMessage.replace(/\{user\}/gi, this.userName);
+      }
+      if (this.aiName) {
+        processedMessage = processedMessage.replace(/\{\{char\}\}/gi, this.aiName);
+        processedMessage = processedMessage.replace(/\{char\}/gi, this.aiName);
+      }
+
       // 添加AI的开场白消息
       const aiMessage = {
         role: 'ai',
-        content: firstMes,
+        content: processedMessage,
         timestamp: new Date(),
         isStreaming: false
       };
       this.messages.push(aiMessage);
 
-      // 同时添加到 chatList，用于后端上下文
-      this.chatList.push(firstMes);
+      // 同时添加到 chatList，用于后端上下文（也使用替换后的内容）
+      this.chatList.push(processedMessage);
 
       // 更新状态
-      this.response = firstMes;
+      this.response = processedMessage;
       this.isResponseComplete = true;
 
       // 滚动到开场白

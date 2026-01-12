@@ -216,6 +216,11 @@ export default {
       currentCard: null,
       uploadAction: '', // 不使用默认action
 
+      // NSFW 模式相关
+      showNsfw: false,
+      keySequence: '', // 存储按键序列
+      keySequenceTimeout: null, // 按键序列超时定时器
+
       // 配置弹窗相关
       configDialogVisible: false,
       configSaving: false,
@@ -243,6 +248,16 @@ export default {
   },
   mounted() {
     this.loadCardList()
+    // 添加键盘监听
+    window.addEventListener('keydown', this.handleKeyDown)
+  },
+  beforeDestroy() {
+    // 移除键盘监听
+    window.removeEventListener('keydown', this.handleKeyDown)
+    // 清除定时器
+    if (this.keySequenceTimeout) {
+      clearTimeout(this.keySequenceTimeout)
+    }
   },
   methods: {
     /**
@@ -252,13 +267,80 @@ export default {
       this.loading = true
       this.api({
         url: '/character-card/list',
-        method: 'get'
+        method: 'get',
+        params: {
+          showNsfw: this.showNsfw
+        }
       }).then(data => {
         this.cardList = data || []
         this.loading = false
       }).catch(() => {
         this.loading = false
       })
+    },
+
+    /**
+     * 键盘按下事件处理
+     */
+    handleKeyDown(event) {
+      // 如果正在输入框中输入，忽略按键
+      const tagName = event.target.tagName.toLowerCase()
+      if (tagName === 'input' || tagName === 'textarea') {
+        return
+      }
+
+      // 获取按键（转换为大写）
+      const key = event.key.toUpperCase()
+
+      // 只处理字母键
+      if (key.length === 1 && /[A-Z]/.test(key)) {
+        // 添加到按键序列
+        this.keySequence += key
+
+        // 清除之前的超时定时器
+        if (this.keySequenceTimeout) {
+          clearTimeout(this.keySequenceTimeout)
+        }
+
+        // 设置新的超时定时器（2秒后重置按键序列）
+        this.keySequenceTimeout = setTimeout(() => {
+          this.keySequence = ''
+        }, 2000)
+
+        // 检查是否匹配 "NSFW"
+        if (this.keySequence.includes('NSFW')) {
+          this.toggleNsfwMode()
+          // 重置按键序列
+          this.keySequence = ''
+        }
+
+        // 限制按键序列长度，避免内存占用过多
+        if (this.keySequence.length > 10) {
+          this.keySequence = this.keySequence.slice(-10)
+        }
+      }
+    },
+
+    /**
+     * 切换 NSFW 模式
+     */
+    toggleNsfwMode() {
+      this.showNsfw = !this.showNsfw
+
+      // 显示提示消息
+      const message = this.showNsfw
+        ? '🔓 已开启全部内容显示模式'
+        : '🔒 已切换为工作场景模式'
+
+      this.$message({
+        message: message,
+        type: this.showNsfw ? 'warning' : 'success',
+        duration: 2000,
+        showClose: true
+      })
+
+      // 重新加载列表
+      this.loadCardList()
     },
 
     /**
