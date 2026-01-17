@@ -1,6 +1,9 @@
 <template>
   <el-menu class="navbar" mode="horizontal">
-    <hamburger class="hamburger-container" :toggleClick="toggleSideBar" :isActive="sidebar.opened"></hamburger>
+    <!-- 移动端汉堡菜单 -->
+    <mobile-menu v-if="isMobile" class="hamburger-container" :is-active="sidebar.opened" />
+    <!-- 桌面端汉堡菜单 -->
+    <hamburger v-else class="hamburger-container" :toggleClick="toggleSideBar" :isActive="sidebar.opened"></hamburger>
     <breadcrumb></breadcrumb>
     <el-dropdown class="avatar-container" trigger="click">
       <div class="avatar-wrapper">
@@ -23,7 +26,7 @@
       </el-dropdown-menu>
     </el-dropdown>
 
-    <el-dialog title="修改信息" :visible.sync="dialogVisible" width="30%" :append-to-body="true">
+    <el-dialog title="修改信息" :visible.sync="dialogVisible" :width="isMobile ? '90%' : '30%'" :append-to-body="true">
       <el-form ref="passwordForm" :model="modifyInfoForm" label-width="100px">
         <el-form-item label="用户名" required>
           <el-input v-model="modifyInfoForm.userName"></el-input>
@@ -68,7 +71,9 @@
 import {mapGetters} from 'vuex';
 import Breadcrumb from '@/components/Breadcrumb';
 import Hamburger from '@/components/Hamburger';
+import MobileMenu from '@/components/MobileMenu';
 import {sm3} from "sm-crypto";
+import responsiveMixin from '@/mixins/responsiveMixin';
 
 export default {
   data() {
@@ -87,8 +92,10 @@ export default {
   },
   components: {
     Breadcrumb,
-    Hamburger
+    Hamburger,
+    MobileMenu
   },
+  mixins: [responsiveMixin],
   mounted() {
     this.getAvatar();
   },

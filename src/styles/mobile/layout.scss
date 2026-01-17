@@ -1,0 +1,195 @@
+/**
+ * 移动端布局样式
+ * 包含侧边栏、导航栏、主容器等核心布局组件的响应式样式
+ */
+
+@use './variables' as *;
+@use './mixins' as *;
+
+// ========== 侧边栏 ==========
+.sidebar-container {
+  // 移动端：抽屉式侧边栏
+  @include mobile {
+    width: $mobile-sidebar-width !important;
+    max-width: $mobile-sidebar-max-width;
+    transform: translateX(-100%);
+    transition: transform $transition-duration $drawer-transition !important;
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.25);
+    z-index: $z-mobile-sidebar !important;
+
+    &.mobile-opened {
+      transform: translateX(0);
+    }
+
+    // 移动端侧边栏内的菜单项优化
+    .el-menu {
+      border: none;
+    }
+
+    // 移动端侧边栏内部内容不要有悬浮移动效果
+    .el-menu-item,
+    .el-submenu__title,
+    .submenu-title-noDropdown {
+      &:hover {
+        transform: translateX(0) !important; // 移动端不要左右移动
+      }
+    }
+  }
+}
+
+// ========== 移动端遮罩层 ==========
+.mobile-mask {
+  display: none;
+
+  @include mobile {
+    display: block !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: $z-mobile-mask;
+    opacity: 0;
+    transition: opacity $transition-duration;
+    pointer-events: none;
+
+    &.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+}
+
+// ========== 主容器 ==========
+.main-container {
+  @include mobile {
+    margin-left: 0 !important;
+    width: 100%;
+  }
+}
+
+// ========== 导航栏 ==========
+.navbar {
+  height: 60px;
+  line-height: 60px;
+  background: #fff;
+  border-bottom: 1px solid #d8dce5;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.12);
+
+  @include mobile {
+    height: $mobile-header-height;
+    line-height: $mobile-header-height;
+    padding: 0 $mobile-padding;
+    z-index: $z-mobile-header;
+    position: relative;
+
+    .hamburger-container {
+      display: inline-block;
+      line-height: $mobile-header-height;
+      height: 100%;
+      float: left;
+      margin-right: 12px;
+    }
+
+    .breadcrumb-container {
+      float: left;
+      line-height: $mobile-header-height;
+      font-size: 12px;
+      max-width: calc(100% - 120px);
+      overflow: hidden;
+
+      // 隐藏面包屑导航的某些部分以节省空间
+      .el-breadcrumb__separator {
+        margin: 0 6px;
+      }
+
+      .el-breadcrumb__item {
+        &:not(:last-child) {
+          display: none; // 移动端只显示最后一级
+        }
+      }
+    }
+
+    .right-menu {
+      float: right;
+      height: 100%;
+
+      .avatar-container {
+        margin-right: 0;
+
+        .avatar-wrapper {
+          padding: 0 8px;
+
+          .user-avatar {
+            width: 32px;
+            height: 32px;
+          }
+
+          .user-name {
+            display: none; // 移动端隐藏用户名
+          }
+        }
+      }
+    }
+  }
+}
+
+// ========== 应用包裹器 ==========
+.app-wrapper {
+  // 侧边栏收起状态
+  &.hideSidebar {
+    @include mobile {
+      .sidebar-container {
+        width: $mobile-sidebar-width !important;
+        max-width: $mobile-sidebar-max-width;
+        transform: translateX(-100%);
+      }
+
+      .main-container {
+        margin-left: 0 !important;
+      }
+    }
+  }
+}
+
+// ========== 主内容区 ==========
+.app-main {
+  min-height: calc(100vh - 60px);
+  width: 100%;
+  position: relative;
+  overflow-y: auto;
+  background: #f0f2f5;
+  padding: 0;
+
+  @include mobile {
+    min-height: calc(100vh - #{$mobile-header-height});
+  }
+}
+
+// ========== 内容容器 ==========
+.app-container {
+  padding: 24px;
+  background: transparent;
+  min-height: 100%;
+
+  @include mobile {
+    padding: $mobile-padding;
+  }
+}
+
+// ========== 全局字体大小调整 ==========
+html {
+  font-size: 16px;
+
+  @include mobile {
+    font-size: $mobile-font-size;
+  }
+}
+
+body {
+  @include mobile {
+    @include no-text-size-adjust;
+    @include no-tap-highlight;
+  }
+}

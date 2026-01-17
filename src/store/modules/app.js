@@ -35,6 +35,11 @@ const app = {
     ToggleSideBar({ commit }) {
       commit('TOGGLE_SIDEBAR')
     },
+    CloseSideBar({ commit, state }) {
+      if (state.sidebar.opened) {
+        commit('TOGGLE_SIDEBAR')
+      }
+    },
     addVisitedViews({ commit }, view) {
       commit('ADD_VISITED_VIEWS', view)
     },

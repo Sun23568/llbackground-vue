@@ -1,0 +1,70 @@
+/**
+ * 移动端汉堡菜单样式
+ * 三横线动画效果
+ */
+
+.mobile-menu {
+  display: inline-block;
+  cursor: pointer;
+  padding: 10px;
+  vertical-align: middle;
+  -webkit-tap-highlight-color: transparent;
+
+  .hamburger {
+    width: 24px;
+    height: 18px;
+    position: relative;
+    transform: rotate(0deg);
+    transition: 0.3s ease-in-out;
+
+    span {
+      display: block;
+      position: absolute;
+      height: 2px;
+      width: 100%;
+      background: #5a5e66;
+      border-radius: 2px;
+      opacity: 1;
+      left: 0;
+      transform: rotate(0deg);
+      transition: 0.25s ease-in-out;
+
+      &:nth-child(1) {
+        top: 0;
+      }
+
+      &:nth-child(2) {
+        top: 8px;
+      }
+
+      &:nth-child(3) {
+        top: 16px;
+      }
+    }
+
+    // 激活状态（侧边栏打开时，三横线变成 X）
+    &.is-active {
+      span {
+        &:nth-child(1) {
+          top: 8px;
+          transform: rotate(135deg);
+        }
+
+        &:nth-child(2) {
+          opacity: 0;
+          left: -60px;
+        }
+
+        &:nth-child(3) {
+          top: 8px;
+          transform: rotate(-135deg);
+        }
+      }
+    }
+  }
+
+  // 移动端点击时的触摸反馈
+  &:active {
+    opacity: 0.7;
+  }
+}

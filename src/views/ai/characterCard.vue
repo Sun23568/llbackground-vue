@@ -28,8 +28,8 @@
       </el-empty>
 
       <!-- 卡片网格 -->
-      <el-row :gutter="20" v-else>
-        <el-col :xs="24" :sm="12" :md="8" :lg="4" v-for="card in cardList" :key="card.id" class="card-col">
+      <el-row :gutter="isMobile ? 12 : 20" v-else>
+        <el-col :xs="12" :sm="12" :md="8" :lg="4" v-for="card in cardList" :key="card.id" class="card-col">
           <div class="character-card" @click="handleMenuCommand({ action: 'chat', card: card })">
             <!-- 右上角悬浮菜单 -->
             <el-dropdown trigger="click" class="card-menu" @command="handleMenuCommand" @click.native.stop>
@@ -76,7 +76,7 @@
     </el-card>
 
     <!-- 上传弹窗 -->
-    <el-dialog title="上传角色卡" :visible.sync="uploadDialogVisible" width="500px" :close-on-click-modal="false">
+    <el-dialog title="上传角色卡" :visible.sync="uploadDialogVisible" :width="isMobile ? '90%' : '500px'" :close-on-click-modal="false">
       <el-upload class="upload-demo" drag :action="uploadAction" :http-request="uploadFile"
         :before-upload="beforeUpload" :show-file-list="false" accept=".json">
         <i class="el-icon-upload"></i>
@@ -91,7 +91,7 @@
     </el-dialog>
 
     <!-- 详情弹窗 -->
-    <el-dialog title="角色卡详情" :visible.sync="detailDialogVisible" width="700px" top="5vh">
+    <el-dialog title="角色卡详情" :visible.sync="detailDialogVisible" :width="isMobile ? '95%' : '700px'" top="5vh">
       <div v-if="currentCard" class="detail-container">
         <el-descriptions :column="1" border>
           <el-descriptions-item label="角色名称">
@@ -127,7 +127,7 @@
     </el-dialog>
 
     <!-- 配置弹窗 -->
-    <el-dialog title="配置角色卡" :visible.sync="configDialogVisible" width="600px" :close-on-click-modal="false">
+    <el-dialog title="配置角色卡" :visible.sync="configDialogVisible" :width="isMobile ? '95%' : '600px'" :close-on-click-modal="false">
       <el-form :model="configForm" :rules="configRules" ref="configFormRef" label-width="120px">
 
         <el-form-item label="角色名称" prop="cardName">
@@ -201,11 +201,12 @@
 <script>
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 import Cookies from 'js-cookie'
-import aiChatMixin from '@/mixins/aiChatMixin';
+import aiChatMixin from '@/mixins/aiChatMixin'
+import responsiveMixin from '@/mixins/responsiveMixin'
 
 export default {
   name: 'CharacterCard',
-  mixins: [aiChatMixin],
+  mixins: [aiChatMixin, responsiveMixin],
   data() {
     return {
       aiMenuId: 'character',

@@ -155,6 +155,9 @@ export default {
       // 清空输入框
       this.question = '';
 
+      // 清空上次的回复内容（只保留最新一次的AI回复用于图片生成）
+      this.response = '';
+
       // 更新 chatList（用于上下文）
       if (this.chatList.length > this.contextSize) {
         this.chatList.shift();

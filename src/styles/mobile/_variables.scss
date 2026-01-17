@@ -1,0 +1,51 @@
+/**
+ * 移动端样式变量
+ * 定义响应式断点、尺寸、颜色等常量
+ */
+
+// ========== 响应式断点 ==========
+$breakpoint-xs: 375px;   // 手机竖屏（iPhone SE）
+$breakpoint-sm: 768px;   // 平板竖屏 / 大屏手机横屏
+$breakpoint-md: 1024px;  // 平板横屏 / 小屏笔记本
+
+// ========== 移动端布局尺寸 ==========
+$mobile-header-height: 50px;            // 移动端导航栏高度
+$mobile-sidebar-width: 80%;             // 移动端侧边栏宽度（百分比）
+$mobile-sidebar-max-width: 280px;       // 移动端侧边栏最大宽度
+$mobile-padding: 12px;                  // 移动端内边距
+$mobile-font-size: 14px;                // 移动端基础字体大小
+$mobile-title-size: 20px;               // 移动端标题字体大小
+
+// ========== 触摸交互尺寸 ==========
+// Apple Human Interface Guidelines 推荐触摸目标最小尺寸为 44x44pt
+$touch-target-size: 44px;               // 触摸目标最小尺寸
+$touch-target-padding: 10px 16px;       // 触摸目标内边距
+
+// ========== 动画与过渡 ==========
+$transition-duration: 0.3s;                          // 标准过渡时长
+$transition-timing: ease;                            // 标准缓动函数
+$drawer-transition: cubic-bezier(0.7, 0.3, 0.1, 1); // 抽屉滑动缓动函数
+
+// ========== Z-index 层级 ==========
+$z-mobile-mask: 1000;         // 移动端遮罩层
+$z-mobile-sidebar: 1001;      // 移动端侧边栏
+$z-mobile-header: 1002;       // 移动端顶部导航栏
+$z-mobile-dialog: 2000;       // 移动端对话框
+
+// ========== 颜色变量（继承主题色） ==========
+$mobile-bg-color: #f0f2f5;           // 移动端背景色
+$mobile-card-bg: #ffffff;            // 移动端卡片背景色
+$mobile-border-color: #e4e7ed;       // 移动端边框颜色
+$mobile-text-primary: #303133;       // 移动端主要文字颜色
+$mobile-text-regular: #606266;       // 移动端常规文字颜色
+$mobile-text-secondary: #909399;     // 移动端次要文字颜色
+
+// ========== 阴影 ==========
+$mobile-shadow-light: 0 2px 4px rgba(0, 0, 0, 0.08);   // 轻阴影
+$mobile-shadow-base: 0 2px 8px rgba(0, 0, 0, 0.12);    // 基础阴影
+$mobile-shadow-dark: 0 4px 12px rgba(0, 0, 0, 0.15);   // 深阴影
+
+// ========== 圆角 ==========
+$mobile-radius-small: 4px;     // 小圆角
+$mobile-radius-base: 8px;      // 基础圆角
+$mobile-radius-large: 12px;    // 大圆角

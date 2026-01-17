@@ -1,0 +1,318 @@
+/**
+ * 移动端 SCSS Mixins
+ * 提供响应式断点、常用布局、文本处理等 mixin
+ */
+
+@use './variables' as *;
+
+// ========== 响应式断点 Mixins ==========
+
+/**
+ * 移动端断点（屏幕宽度 <= 768px）
+ * 使用示例：
+ * .element {
+ *   @include mobile {
+ *     font-size: 14px;
+ *   }
+ * }
+ */
+@mixin mobile {
+  @media (max-width: $breakpoint-sm) {
+    @content;
+  }
+}
+
+/**
+ * 平板断点（768px < 屏幕宽度 <= 1024px）
+ */
+@mixin tablet {
+  @media (min-width: $breakpoint-sm + 1) and (max-width: $breakpoint-md) {
+    @content;
+  }
+}
+
+/**
+ * 桌面端断点（屏幕宽度 > 1024px）
+ */
+@mixin desktop {
+  @media (min-width: $breakpoint-md + 1) {
+    @content;
+  }
+}
+
+/**
+ * 小屏手机断点（屏幕宽度 <= 375px）
+ */
+@mixin mobile-small {
+  @media (max-width: $breakpoint-xs) {
+    @content;
+  }
+}
+
+// ========== 触摸交互 Mixins ==========
+
+/**
+ * 触摸目标尺寸（最小 44x44px）
+ * 使用示例：
+ * .button {
+ *   @include touch-target;
+ * }
+ */
+@mixin touch-target {
+  min-height: $touch-target-size;
+  min-width: $touch-target-size;
+}
+
+/**
+ * 触摸目标内边距
+ */
+@mixin touch-padding {
+  padding: $touch-target-padding;
+}
+
+// ========== 显示/隐藏 Mixins ==========
+
+/**
+ * 移动端隐藏元素
+ * 使用示例：
+ * .desktop-only {
+ *   @include mobile-hide;
+ * }
+ */
+@mixin mobile-hide {
+  @include mobile {
+    display: none !important;
+  }
+}
+
+/**
+ * 桌面端隐藏元素
+ * 使用示例：
+ * .mobile-only {
+ *   @include desktop-hide;
+ * }
+ */
+@mixin desktop-hide {
+  @include desktop {
+    display: none !important;
+  }
+}
+
+/**
+ * 平板端隐藏元素
+ */
+@mixin tablet-hide {
+  @include tablet {
+    display: none !important;
+  }
+}
+
+// ========== 文本处理 Mixins ==========
+
+/**
+ * 单行文本省略
+ * 使用示例：
+ * .text {
+ *   @include text-ellipsis;
+ * }
+ */
+@mixin text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/**
+ * 多行文本省略
+ * @param {number} $lines - 显示行数
+ * 使用示例：
+ * .text {
+ *   @include multi-line-ellipsis(2);
+ * }
+ */
+@mixin multi-line-ellipsis($lines: 2) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: $lines;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// ========== 布局 Mixins ==========
+
+/**
+ * Flex 居中布局
+ * 使用示例：
+ * .container {
+ *   @include flex-center;
+ * }
+ */
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/**
+ * Flex 垂直居中
+ */
+@mixin flex-center-vertical {
+  display: flex;
+  align-items: center;
+}
+
+/**
+ * Flex 水平居中
+ */
+@mixin flex-center-horizontal {
+  display: flex;
+  justify-content: center;
+}
+
+/**
+ * Flex 两端对齐
+ */
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/**
+ * 绝对定位居中
+ */
+@mixin absolute-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+// ========== 滚动条样式 Mixins ==========
+
+/**
+ * 隐藏滚动条
+ * 使用示例：
+ * .scrollable {
+ *   @include hide-scrollbar;
+ * }
+ */
+@mixin hide-scrollbar {
+  /* Chrome, Safari, Edge */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Firefox */
+  scrollbar-width: none;
+
+  /* IE 10+ */
+  -ms-overflow-style: none;
+}
+
+/**
+ * 自定义滚动条样式（仅 Webkit）
+ * @param {color} $track-color - 轨道颜色
+ * @param {color} $thumb-color - 滑块颜色
+ * @param {size} $width - 滚动条宽度
+ */
+@mixin custom-scrollbar($track-color: #f5f5f5, $thumb-color: #c1c1c1, $width: 6px) {
+  &::-webkit-scrollbar {
+    width: $width;
+    height: $width;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $track-color;
+    border-radius: $width / 2;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $thumb-color;
+    border-radius: $width / 2;
+
+    &:hover {
+      background: darken($thumb-color, 10%);
+    }
+  }
+}
+
+// ========== 动画 Mixins ==========
+
+/**
+ * 标准过渡动画
+ * @param {property} $property - 过渡属性（默认 all）
+ */
+@mixin transition($property: all) {
+  transition: $property $transition-duration $transition-timing;
+}
+
+/**
+ * 抽屉滑动动画
+ */
+@mixin drawer-transition {
+  transition: transform $transition-duration $drawer-transition;
+}
+
+// ========== 移动端常用组合样式 ==========
+
+/**
+ * 移动端卡片样式
+ */
+@mixin mobile-card {
+  background: $mobile-card-bg;
+  border-radius: $mobile-radius-base;
+  padding: $mobile-padding;
+  box-shadow: $mobile-shadow-light;
+}
+
+/**
+ * 移动端按钮样式
+ */
+@mixin mobile-button {
+  @include touch-target;
+  @include touch-padding;
+  border-radius: $mobile-radius-small;
+  font-size: $mobile-font-size;
+}
+
+/**
+ * 移动端输入框样式
+ */
+@mixin mobile-input {
+  height: $touch-target-size;
+  line-height: $touch-target-size;
+  padding: 0 15px;
+  font-size: $mobile-font-size;
+  border-radius: $mobile-radius-small;
+}
+
+// ========== 禁用移动端特殊效果 ==========
+
+/**
+ * 禁用移动端点击高亮
+ */
+@mixin no-tap-highlight {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/**
+ * 禁用移动端文本选择
+ */
+@mixin no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/**
+ * 禁用移动端文本调整
+ */
+@mixin no-text-size-adjust {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}

@@ -41,7 +41,7 @@ export default {
 
     if (cardId) {
       this.cardId = cardId
-      this.pageTitle = cardName ? `${cardName} - 角色对话` : '角色对话'
+      this.pageTitle = cardName ? `${cardName}` : '角色对话'
 
       // 获取角色卡详情（包括avatar）
       this.fetchCharacterCardDetail()

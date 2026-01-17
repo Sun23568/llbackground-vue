@@ -1,0 +1,17 @@
+/**
+ * 移动端样式入口文件
+ * 统一引入所有移动端样式模块
+ */
+
+// 引入变量和 mixins（必须在最前面）
+@use './variables' as *;
+@use './mixins' as *;
+
+// 引入布局样式
+@use './layout';
+
+// 引入组件样式
+@use './components';
+
+// 引入页面样式
+@use './pages';
