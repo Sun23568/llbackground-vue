@@ -4,7 +4,11 @@
     <el-card class="header-card" shadow="never">
       <div class="header-content">
         <div class="title-section">
-          <h2 class="page-title">
+          <h2
+            class="page-title"
+            @click="isMobile ? handleTitleTap() : null"
+            :style="isMobile ? { cursor: 'pointer', userSelect: 'none' } : {}"
+          >
             <i class="el-icon-postcard"></i>
             角色卡管理
           </h2>
@@ -222,6 +226,10 @@ export default {
       keySequence: '', // 存储按键序列
       keySequenceTimeout: null, // 按键序列超时定时器
 
+      // 移动端点击触发相关
+      tapCount: 0, // 点击计数器
+      tapTimeout: null, // 点击超时定时器
+
       // 配置弹窗相关
       configDialogVisible: false,
       configSaving: false,
@@ -249,15 +257,27 @@ export default {
   },
   mounted() {
     this.loadCardList()
-    // 添加键盘监听
-    window.addEventListener('keydown', this.handleKeyDown)
+
+    // 仅在PC端（非移动端）添加键盘监听
+    if (!this.isMobile) {
+      window.addEventListener('keydown', this.handleKeyDown)
+    }
+    // 移动端通过模板绑定点击事件，无需在此处添加监听
   },
   beforeDestroy() {
-    // 移除键盘监听
-    window.removeEventListener('keydown', this.handleKeyDown)
-    // 清除定时器
+    // 移除键盘监听（仅PC端添加了监听）
+    if (!this.isMobile) {
+      window.removeEventListener('keydown', this.handleKeyDown)
+    }
+
+    // 清除键盘按键序列定时器
     if (this.keySequenceTimeout) {
       clearTimeout(this.keySequenceTimeout)
+    }
+
+    // 清除移动端点击定时器
+    if (this.tapTimeout) {
+      clearTimeout(this.tapTimeout)
     }
   },
   methods: {
@@ -342,6 +362,34 @@ export default {
 
       // 重新加载列表
       this.loadCardList()
+    },
+
+    /**
+     * 处理标题点击事件（移动端彩蛋触发）
+     * 连续点击5次（3秒内）触发NSFW模式切换
+     */
+    handleTitleTap() {
+      // 增加点击计数
+      this.tapCount++
+
+      // 清除之前的超时定时器
+      if (this.tapTimeout) {
+        clearTimeout(this.tapTimeout)
+      }
+
+      // 检查是否达到触发条件（5次点击）
+      if (this.tapCount >= 5) {
+        // 触发NSFW模式切换
+        this.toggleNsfwMode()
+        // 重置计数器
+        this.tapCount = 0
+        return
+      }
+
+      // 设置新的超时定时器（3秒后重置计数）
+      this.tapTimeout = setTimeout(() => {
+        this.tapCount = 0
+      }, 3000)
     },
 
     /**
