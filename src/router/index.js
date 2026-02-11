@@ -152,5 +152,29 @@ export const asyncRouterMap = [
         menu: 'fileUpload'
       }
     ]
+  },
+  // ========== 爬虫管理 ==========
+  {
+    path: '/crawler',
+    component: Layout,
+    redirect: '/crawler/config',
+    name: '爬虫管理',
+    meta: { title: '爬虫管理', icon: 's-promotion' },
+    children: [
+      {
+        path: 'config',
+        name: '爬虫配置',
+        component: _import('crawler/CrawlerConfig'),
+        meta: { title: '爬虫配置', icon: 'setting' },
+        menu: 'crawlerConfig'
+      },
+      {
+        path: 'record',
+        name: '爬取记录',
+        component: _import('crawler/CrawlerRecord'),
+        meta: { title: '爬取记录', icon: 'document' },
+        menu: 'crawlerRecord'
+      }
+    ]
   }
 ]
