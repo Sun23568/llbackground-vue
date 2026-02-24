@@ -82,7 +82,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="280" align="center" fixed="right">
+        <el-table-column label="操作" width="300" align="center" fixed="right">
           <template slot-scope="scope">
             <div class="action-buttons">
               <el-button
@@ -579,6 +579,10 @@ export default {
   display: flex;
   gap: 8px;
   justify-content: center;
+}
+
+.action-buttons .el-button {
+  flex-shrink: 0;
 }
 
 /* 空状态 */
