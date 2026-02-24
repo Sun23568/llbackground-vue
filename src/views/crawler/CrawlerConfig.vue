@@ -566,11 +566,12 @@ export default {
 }
 
 .url-info .el-tag {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   height: 20px;
-  line-height: normal;
+  line-height: 1;
+  padding: 0 5px;
 }
 
 .url-text {

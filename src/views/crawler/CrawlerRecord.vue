@@ -47,11 +47,13 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="执行状态" width="100" align="center">
+        <el-table-column label="执行状态" width="120" align="center">
           <template slot-scope="scope">
-            <el-tag :type="scope.row.status === 'SUCCESS' ? 'success' : 'danger'" size="small">
-              {{ scope.row.status === 'SUCCESS' ? '成功' : '失败' }}
-            </el-tag>
+            <div class="status-info">
+              <el-tag :type="scope.row.status === 'SUCCESS' ? 'success' : 'danger'" size="small">
+                {{ scope.row.status === 'SUCCESS' ? '成功' : '失败' }}
+              </el-tag>
+            </div>
           </template>
         </el-table-column>
 
@@ -116,9 +118,11 @@
           <el-descriptions-item label="执行时间">{{ currentDetail.executeTime }}</el-descriptions-item>
           <el-descriptions-item label="执行耗时">{{ formatDuration(currentDetail.duration) }}</el-descriptions-item>
           <el-descriptions-item label="执行状态" :span="2">
-            <el-tag :type="currentDetail.status === 'SUCCESS' ? 'success' : 'danger'">
-              {{ currentDetail.status === 'SUCCESS' ? '成功' : '失败' }}
-            </el-tag>
+            <div class="status-info">
+              <el-tag :type="currentDetail.status === 'SUCCESS' ? 'success' : 'danger'" size="small">
+                {{ currentDetail.status === 'SUCCESS' ? '成功' : '失败' }}
+              </el-tag>
+            </div>
           </el-descriptions-item>
           <el-descriptions-item label="错误信息" :span="2" v-if="currentDetail.errorMessage">
             <div class="error-message">{{ currentDetail.errorMessage }}</div>
@@ -322,6 +326,21 @@ export default {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.status-info {
+  display: inline-flex;
+  vertical-align: middle;
+  line-height: normal;
+}
+
+.status-info .el-tag {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 24px;
+  line-height: 1 !important;
+  padding: 0 8px;
 }
 
 .error-text {
