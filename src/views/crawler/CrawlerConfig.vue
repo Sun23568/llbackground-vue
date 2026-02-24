@@ -76,7 +76,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="创建时间" width="160">
+        <el-table-column label="创建时间" width="180">
           <template slot-scope="scope">
             {{ scope.row.createTime || '-' }}
           </template>
@@ -563,6 +563,14 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.url-info .el-tag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  line-height: normal;
 }
 
 .url-text {
