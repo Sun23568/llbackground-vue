@@ -115,6 +115,42 @@
         </el-table-column>
       </el-table>
 
+      <!-- 变量输入对话框 -->
+      <el-dialog
+        title="填写执行变量"
+        :visible.sync="varDialog.visible"
+        width="480px"
+        :close-on-click-modal="false"
+        class="modern-dialog var-dialog">
+        <div class="var-dialog-tip">
+          <i class="el-icon-info"></i>
+          以下变量将替换 URL / 请求体中对应的 <code>{{占位符}}</code>
+        </div>
+        <el-form label-position="top" class="var-form">
+          <el-form-item
+            v-for="key in varDialog.keys"
+            :key="key"
+            :label="key">
+            <el-input
+              v-model="varDialog.values[key]"
+              :placeholder="'请输入 ' + key + ' 的值'"
+              clearable>
+            </el-input>
+          </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+          <el-button @click="varDialog.visible = false" size="medium">取消</el-button>
+          <el-button
+            type="success"
+            icon="el-icon-video-play"
+            size="medium"
+            :loading="varDialog.row && varDialog.row.executing"
+            @click="doExecuteWithVars">
+            确认执行
+          </el-button>
+        </div>
+      </el-dialog>
+
       <!-- 空状态 -->
       <div v-if="!listLoading && list.length === 0" class="empty-state">
         <i class="el-icon-document-delete"></i>
@@ -302,6 +338,13 @@ export default {
         update: '编辑爬虫配置',
         create: '新增爬虫配置'
       },
+      // 变量输入对话框
+      varDialog: {
+        visible: false,
+        keys: [],
+        values: {},
+        row: null
+      },
       tempConfigForm: {
         configName: '',
         targetUrl: '',
@@ -454,19 +497,59 @@ export default {
       }).catch(() => {});
     },
 
+    // 提取字符串中所有 {{xxx}} 占位符，返回去重后的变量名数组
+    extractPlaceholders(str) {
+      if (!str) return [];
+      const regex = /\{\{(\w+)\}\}/g;
+      const keys = new Set();
+      let m;
+      while ((m = regex.exec(str)) !== null) {
+        keys.add(m[1]);
+      }
+      return Array.from(keys);
+    },
+
     executeCrawler(row) {
+      // 扫描 URL 和 requestBody 中的占位符
+      const keys = [
+        ...this.extractPlaceholders(row.targetUrl),
+        ...this.extractPlaceholders(row.requestBody)
+      ];
+      const uniqueKeys = [...new Set(keys)];
+
+      if (uniqueKeys.length === 0) {
+        // 无占位符，直接执行
+        this.doExecute(row, {});
+      } else {
+        // 有占位符，弹出变量填写弹窗
+        const initValues = {};
+        uniqueKeys.forEach(k => { initValues[k] = ''; });
+        this.varDialog = {
+          visible: true,
+          keys: uniqueKeys,
+          values: initValues,
+          row
+        };
+      }
+    },
+
+    doExecuteWithVars() {
+      this.doExecute(this.varDialog.row, this.varDialog.values);
+      this.varDialog.visible = false;
+    },
+
+    doExecute(row, variables) {
       this.$set(row, 'executing', true);
       this.api({
         url: "/crawler/execute",
         method: "post",
-        data: { configId: row.pkId }
-      }).then(data => {
+        data: { configId: row.pkId, variables }
+      }).then(() => {
         this.$message({
           type: 'success',
           message: '执行成功！',
           duration: 3000
         });
-        // 可以跳转到记录列表查看结果
         this.$router.push('/crawler/record');
       }).catch(err => {
         this.$message.error(err.message || '执行失败');
@@ -638,6 +721,36 @@ export default {
 
 .dialog-footer {
   text-align: right;
+}
+
+/* 变量输入弹窗 */
+.var-dialog-tip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ecf5ff;
+  color: #409EFF;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.var-dialog-tip code {
+  background: #d9ecff;
+  color: #337ecc;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+.var-form .el-form-item {
+  margin-bottom: 16px;
+}
+
+.var-form .el-form-item__label {
+  font-weight: 600;
+  color: #303133;
 }
 
 /* 响应式 */
