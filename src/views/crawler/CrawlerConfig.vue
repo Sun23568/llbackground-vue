@@ -267,8 +267,8 @@
             <el-input
               type="textarea"
               v-model="tempConfigForm.postProcessor"
-              :rows="3"
-              placeholder='{"type": "jsonExtract", "path": "data.items"}'></el-input>
+              :rows="4"
+              placeholder='{"type":"jsonExtract","fields":{"日期":"data.todayRecord[0].date","题号":"data.todayRecord[0].question.questionFrontendId","中文标题":"data.todayRecord[0].question.translatedTitle","难度":"data.todayRecord[0].question.difficulty"}}'></el-input>
           </el-form-item>
         </div>
 
