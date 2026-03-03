@@ -263,12 +263,83 @@
               placeholder='{"type": "urlBuilder", "params": {...}}'></el-input>
           </el-form-item>
 
-          <el-form-item label="后置处理器 (JSON格式)">
+          <el-form-item label="后置处理器">
+            <!-- 类型选择 -->
+            <el-select
+              v-model="postProcessorType"
+              placeholder="请选择后置处理器类型"
+              style="width:280px;margin-bottom:12px"
+              @change="onPostProcessorTypeChange">
+              <el-option label="不使用" value="none"></el-option>
+              <el-option label="JSON 字段提取" value="jsonExtract"></el-option>
+              <el-option label="发送邮件通知（原始数据）" value="sendEmail"></el-option>
+              <el-option label="提取字段 → 发邮件（推荐）" value="extractAndEmail"></el-option>
+              <el-option label="手动输入 JSON" value="manual"></el-option>
+            </el-select>
+
+            <!-- 链式模式：提取字段 + 发邮件 -->
+            <div v-if="postProcessorType === 'extractAndEmail'" class="email-processor-box">
+              <div class="chain-tip">
+                <i class="el-icon-connection"></i>
+                执行顺序：<strong>HTTP爬取</strong> → <strong>JSON字段提取</strong> → <strong>发送邮件</strong>
+              </div>
+              <div class="chain-section">
+                <div class="chain-section-title"><i class="el-icon-document"></i> 第①步：提取字段</div>
+                <div v-for="(field, idx) in extractFields" :key="idx" class="extract-field-row">
+                  <el-input v-model="field.alias" placeholder="别名（如：题名）" size="small" style="width:130px" @input="syncChainedPostProcessor"></el-input>
+                  <span class="field-arrow">→</span>
+                  <el-input v-model="field.path" placeholder="JSON路径（如：data.todayRecord[0].question.translatedTitle）" size="small" style="flex:1" @input="syncChainedPostProcessor"></el-input>
+                  <el-button type="danger" icon="el-icon-delete" size="mini" circle plain @click="removeExtractField(idx)"></el-button>
+                </div>
+                <el-button type="primary" icon="el-icon-plus" size="mini" plain style="margin-top:6px" @click="addExtractField">添加字段</el-button>
+              </div>
+              <div class="chain-section">
+                <div class="chain-section-title"><i class="el-icon-message"></i> 第②步：发送邮件</div>
+                <el-form-item label="邮件主题" style="margin-bottom:10px">
+                  <el-input v-model="emailSubject" placeholder="爬虫执行结果通知" @input="syncChainedPostProcessor"></el-input>
+                </el-form-item>
+                <el-form-item label="收件人邮箱" style="margin-bottom:0">
+                  <div class="recipient-input-wrap">
+                    <el-tag v-for="email in emailRecipients" :key="email" closable size="small" type="info" @close="removeRecipient(email)" style="margin:0 6px 6px 0">{{ email }}</el-tag>
+                    <el-input v-model="emailInput" size="small" placeholder="输入邮箱后按 Enter 添加" style="width:240px" @keyup.enter.native="addRecipientAndSync" @blur="addRecipientAndSync">
+                      <el-button slot="append" icon="el-icon-plus" @click="addRecipientAndSync">添加</el-button>
+                    </el-input>
+                  </div>
+                </el-form-item>
+              </div>
+              <div class="json-preview" v-if="tempConfigForm.postProcessor">
+                <span class="json-preview-label">JSON 预览：</span>
+                <code>{{ tempConfigForm.postProcessor }}</code>
+              </div>
+            </div>
+
+            <!-- 仅发邮件（原始数据）-->
+            <div v-if="postProcessorType === 'sendEmail'" class="email-processor-box">
+              <el-form-item label="邮件主题" style="margin-bottom:12px">
+                <el-input v-model="emailSubject" placeholder="爬虫执行结果通知" @input="syncEmailPostProcessor"></el-input>
+              </el-form-item>
+              <el-form-item label="收件人邮箱" style="margin-bottom:0">
+                <div class="recipient-input-wrap">
+                  <el-tag v-for="email in emailRecipients" :key="email" closable size="small" type="info" @close="removeRecipient(email)" style="margin:0 6px 6px 0">{{ email }}</el-tag>
+                  <el-input v-model="emailInput" size="small" placeholder="输入邮箱后按 Enter 添加" style="width:240px" @keyup.enter.native="addRecipient" @blur="addRecipient">
+                    <el-button slot="append" icon="el-icon-plus" @click="addRecipient">添加</el-button>
+                  </el-input>
+                </div>
+              </el-form-item>
+              <div class="json-preview" v-if="tempConfigForm.postProcessor">
+                <span class="json-preview-label">JSON 预览：</span>
+                <code>{{ tempConfigForm.postProcessor }}</code>
+              </div>
+            </div>
+
+            <!-- jsonExtract 或 手动输入 -->
             <el-input
+              v-if="postProcessorType !== 'sendEmail' && postProcessorType !== 'none' && postProcessorType !== 'extractAndEmail'"
               type="textarea"
               v-model="tempConfigForm.postProcessor"
               :rows="4"
-              placeholder='{"type":"jsonExtract","fields":{"日期":"data.todayRecord[0].date","题号":"data.todayRecord[0].question.questionFrontendId","中文标题":"data.todayRecord[0].question.translatedTitle","难度":"data.todayRecord[0].question.difficulty"}}'></el-input>
+              :placeholder="getPostProcessorPlaceholder()">
+            </el-input>
           </el-form-item>
         </div>
 
@@ -345,6 +416,12 @@ export default {
         values: {},
         row: null
       },
+      // 后置处理器可视化字段
+      postProcessorType: 'none',
+      emailSubject: '',
+      emailRecipients: [],
+      emailInput: '',
+      extractFields: [],  // [{alias, path}],
       tempConfigForm: {
         configName: '',
         targetUrl: '',
@@ -407,6 +484,11 @@ export default {
         enabled: true,
         description: ''
       };
+      this.postProcessorType = 'none';
+      this.emailSubject = '';
+      this.emailRecipients = [];
+      this.emailInput = '';
+      this.extractFields = [];
       this.dialogStatus = 'create';
       this.dialogFormVisible = true;
       this.$nextTick(() => {
@@ -418,6 +500,8 @@ export default {
 
     showEdit(row) {
       this.tempConfigForm = { ...row };
+      // 反序列化后置处理器
+      this.parsePostProcessor(row.postProcessor);
       this.dialogStatus = 'update';
       this.dialogFormVisible = true;
       this.$nextTick(() => {
@@ -580,6 +664,137 @@ export default {
     handleCurrentChange(val) {
       this.pageNum = val;
       this.getList();
+    },
+
+    // ====== 后置处理器可视化 ======
+    onPostProcessorTypeChange(type) {
+      if (type === 'none') {
+        this.tempConfigForm.postProcessor = '';
+      } else if (type === 'sendEmail') {
+        this.syncEmailPostProcessor();
+      }
+    },
+
+    addRecipient() {
+      const val = (this.emailInput || '').trim();
+      if (!val) return;
+      const emailReg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailReg.test(val)) {
+        this.$message.warning('请输入合法的邮箱地址');
+        return;
+      }
+      if (this.emailRecipients.includes(val)) {
+        this.$message.warning('该邮箱已添加');
+        return;
+      }
+      this.emailRecipients.push(val);
+      this.emailInput = '';
+      this.syncEmailPostProcessor();
+    },
+
+    removeRecipient(email) {
+      this.emailRecipients = this.emailRecipients.filter(e => e !== email);
+      this.syncEmailPostProcessor();
+    },
+
+    syncEmailPostProcessor() {
+      const config = {
+        type: 'sendEmail',
+        subject: this.emailSubject || '爬虫执行结果通知',
+        recipients: this.emailRecipients
+      };
+      this.tempConfigForm.postProcessor = JSON.stringify(config);
+    },
+
+    parsePostProcessor(json) {
+      this.emailSubject = '';
+      this.emailRecipients = [];
+      this.emailInput = '';
+      this.extractFields = [];
+      if (!json || !json.trim()) {
+        this.postProcessorType = 'none';
+        return;
+      }
+      try {
+        const trimmed = json.trim();
+        if (trimmed.startsWith('[')) {
+          // 数组形式：链式执行
+          const arr = JSON.parse(trimmed);
+          const extractStep = arr.find(s => s.type === 'jsonExtract');
+          const emailStep = arr.find(s => s.type === 'sendEmail');
+          if (extractStep && emailStep) {
+            this.postProcessorType = 'extractAndEmail';
+            this.emailSubject = emailStep.subject || '';
+            this.emailRecipients = Array.isArray(emailStep.recipients) ? emailStep.recipients : [];
+            if (extractStep.fields) {
+              this.extractFields = Object.entries(extractStep.fields).map(([alias, path]) => ({ alias, path }));
+            }
+          } else {
+            this.postProcessorType = 'manual';
+          }
+        } else {
+          const obj = JSON.parse(trimmed);
+          if (obj.type === 'sendEmail') {
+            this.postProcessorType = 'sendEmail';
+            this.emailSubject = obj.subject || '';
+            this.emailRecipients = Array.isArray(obj.recipients) ? obj.recipients : [];
+          } else if (obj.type === 'jsonExtract') {
+            this.postProcessorType = 'jsonExtract';
+          } else {
+            this.postProcessorType = 'manual';
+          }
+        }
+      } catch (e) {
+        this.postProcessorType = 'manual';
+      }
+    },
+
+    // 链式模式：添加提取字段
+    addExtractField() {
+      this.extractFields.push({ alias: '', path: '' });
+    },
+
+    removeExtractField(idx) {
+      this.extractFields.splice(idx, 1);
+      this.syncChainedPostProcessor();
+    },
+
+    // 链式模式：同步序列化成 JSON 数组
+    syncChainedPostProcessor() {
+      const fields = {};
+      this.extractFields.forEach(f => {
+        if (f.alias && f.path) fields[f.alias] = f.path;
+      });
+      const config = [
+        { type: 'jsonExtract', fields },
+        { type: 'sendEmail', subject: this.emailSubject || '爬虫执行结果通知', recipients: this.emailRecipients }
+      ];
+      this.tempConfigForm.postProcessor = JSON.stringify(config);
+    },
+
+    // 链式模式中的添加收件人（添加同时刷新 JSON）
+    addRecipientAndSync() {
+      const val = (this.emailInput || '').trim();
+      if (!val) return;
+      const emailReg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailReg.test(val)) {
+        this.$message.warning('请输入合法的邮箱地址');
+        return;
+      }
+      if (this.emailRecipients.includes(val)) {
+        this.$message.warning('该邮箱已添加');
+        return;
+      }
+      this.emailRecipients.push(val);
+      this.emailInput = '';
+      this.syncChainedPostProcessor();
+    },
+
+    getPostProcessorPlaceholder() {
+      if (this.postProcessorType === 'jsonExtract') {
+        return '{"type":"jsonExtract","fields":{"\u65e5\u671f":"data.todayRecord[0].date","\u9898\u53f7":"data.todayRecord[0].question.questionFrontendId"}}';
+      }
+      return '{"type":"..."}';
     }
   }
 }
@@ -717,6 +932,52 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* 邮件后置处理器 */
+.email-processor-box {
+  background: #f0f9eb;
+  border: 1px solid #e1f3d8;
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 4px;
+}
+
+.email-processor-box .el-form-item {
+  margin-bottom: 12px;
+}
+
+.recipient-input-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  min-height: 38px;
+}
+
+.json-preview {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: #fff;
+  border: 1px dashed #c0c4cc;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #606266;
+  word-break: break-all;
+}
+
+.json-preview-label {
+  color: #909399;
+  margin-right: 6px;
+}
+
+.json-preview code {
+  color: #409EFF;
+  font-family: monospace;
 }
 
 .dialog-footer {
