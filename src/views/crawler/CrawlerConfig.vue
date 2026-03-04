@@ -273,7 +273,7 @@
               <el-option label="不使用" value="none"></el-option>
               <el-option label="JSON 字段提取" value="jsonExtract"></el-option>
               <el-option label="发送邮件通知（原始数据）" value="sendEmail"></el-option>
-              <el-option label="提取字段 → 发邮件（推荐）" value="extractAndEmail"></el-option>
+              <el-option label="提取字段 → 发邮件" value="extractAndEmail"></el-option>
               <el-option label="手动输入 JSON" value="manual"></el-option>
             </el-select>
 
@@ -306,6 +306,40 @@
                     </el-input>
                   </div>
                 </el-form-item>
+
+                <!-- 发送条件 -->
+                <div class="condition-block">
+                  <div class="condition-header">
+                    <el-switch v-model="emailCondition.enabled" @change="syncChainedPostProcessor"></el-switch>
+                    <span class="condition-label">满足条件才发送</span>
+                    <span class="condition-hint" v-if="!emailCondition.enabled">（当前：无条件发送）</span>
+                    <template v-if="emailCondition.enabled && emailCondition.rules.length > 1">
+                      <el-radio-group v-model="emailCondition.logic" size="mini" style="margin-left:12px" @change="syncChainedPostProcessor">
+                        <el-radio-button label="AND">且（AND）</el-radio-button>
+                        <el-radio-button label="OR">或（OR）</el-radio-button>
+                      </el-radio-group>
+                    </template>
+                  </div>
+                  <template v-if="emailCondition.enabled">
+                    <div v-for="(rule, idx) in emailCondition.rules" :key="idx" class="condition-rule-row">
+                      <span class="condition-connector" v-if="idx > 0">{{ emailCondition.logic === 'OR' ? '或' : '且' }}</span>
+                      <span class="condition-label-text" v-else>当</span>
+                      <el-input v-model="rule.field" size="small" placeholder="字段（如：难度）" style="width:140px" @input="syncChainedPostProcessor"></el-input>
+                      <el-select v-model="rule.operator" size="small" style="width:110px;margin:0 6px" @change="syncChainedPostProcessor">
+                        <el-option label="等于" value="eq"></el-option>
+                        <el-option label="不等于" value="neq"></el-option>
+                        <el-option label="包含" value="contains"></el-option>
+                        <el-option label="大于" value="gt"></el-option>
+                        <el-option label="小于" value="lt"></el-option>
+                        <el-option label="不为空" value="notEmpty"></el-option>
+                        <el-option label="为空" value="isEmpty"></el-option>
+                      </el-select>
+                      <el-input v-if="rule.operator !== 'notEmpty' && rule.operator !== 'isEmpty'" v-model="rule.value" size="small" placeholder="比较值" style="width:130px" @input="syncChainedPostProcessor"></el-input>
+                      <el-button v-if="emailCondition.rules.length > 1" type="danger" icon="el-icon-delete" size="mini" circle plain style="margin-left:4px" @click="removeConditionRule(idx, 'chained')"></el-button>
+                    </div>
+                    <el-button type="warning" icon="el-icon-plus" size="mini" plain style="margin-top:8px" @click="addConditionRule('chained')">添加条件</el-button>
+                  </template>
+                </div>
               </div>
               <div class="json-preview" v-if="tempConfigForm.postProcessor">
                 <span class="json-preview-label">JSON 预览：</span>
@@ -326,6 +360,40 @@
                   </el-input>
                 </div>
               </el-form-item>
+
+              <!-- 发送条件 -->
+              <div class="condition-block">
+                <div class="condition-header">
+                  <el-switch v-model="emailCondition.enabled" @change="syncEmailPostProcessor"></el-switch>
+                  <span class="condition-label">满足条件才发送</span>
+                  <span class="condition-hint" v-if="!emailCondition.enabled">（当前：无条件发送）</span>
+                  <template v-if="emailCondition.enabled && emailCondition.rules.length > 1">
+                    <el-radio-group v-model="emailCondition.logic" size="mini" style="margin-left:12px" @change="syncEmailPostProcessor">
+                      <el-radio-button label="AND">且（AND）</el-radio-button>
+                      <el-radio-button label="OR">或（OR）</el-radio-button>
+                    </el-radio-group>
+                  </template>
+                </div>
+                <template v-if="emailCondition.enabled">
+                  <div v-for="(rule, idx) in emailCondition.rules" :key="idx" class="condition-rule-row">
+                    <span class="condition-connector" v-if="idx > 0">{{ emailCondition.logic === 'OR' ? '或' : '且' }}</span>
+                    <span class="condition-label-text" v-else>当</span>
+                    <el-input v-model="rule.field" size="small" placeholder="JSON字段路径（如：data.status）" style="width:180px" @input="syncEmailPostProcessor"></el-input>
+                    <el-select v-model="rule.operator" size="small" style="width:110px;margin:0 6px" @change="syncEmailPostProcessor">
+                      <el-option label="等于" value="eq"></el-option>
+                      <el-option label="不等于" value="neq"></el-option>
+                      <el-option label="包含" value="contains"></el-option>
+                      <el-option label="大于" value="gt"></el-option>
+                      <el-option label="小于" value="lt"></el-option>
+                      <el-option label="不为空" value="notEmpty"></el-option>
+                      <el-option label="为空" value="isEmpty"></el-option>
+                    </el-select>
+                    <el-input v-if="rule.operator !== 'notEmpty' && rule.operator !== 'isEmpty'" v-model="rule.value" size="small" placeholder="比较值" style="width:130px" @input="syncEmailPostProcessor"></el-input>
+                    <el-button v-if="emailCondition.rules.length > 1" type="danger" icon="el-icon-delete" size="mini" circle plain style="margin-left:4px" @click="removeConditionRule(idx, 'email')"></el-button>
+                  </div>
+                  <el-button type="warning" icon="el-icon-plus" size="mini" plain style="margin-top:8px" @click="addConditionRule('email')">添加条件</el-button>
+                </template>
+              </div>
               <div class="json-preview" v-if="tempConfigForm.postProcessor">
                 <span class="json-preview-label">JSON 预览：</span>
                 <code>{{ tempConfigForm.postProcessor }}</code>
@@ -421,7 +489,8 @@ export default {
       emailSubject: '',
       emailRecipients: [],
       emailInput: '',
-      extractFields: [],  // [{alias, path}],
+      extractFields: [],  // [{alias, path}]
+      emailCondition: { enabled: false, logic: 'AND', rules: [{ field: '', operator: 'eq', value: '' }] },
       tempConfigForm: {
         configName: '',
         targetUrl: '',
@@ -489,6 +558,7 @@ export default {
       this.emailRecipients = [];
       this.emailInput = '';
       this.extractFields = [];
+      this.emailCondition = { enabled: false, logic: 'AND', rules: [{ field: '', operator: 'eq', value: '' }] };
       this.dialogStatus = 'create';
       this.dialogFormVisible = true;
       this.$nextTick(() => {
@@ -703,6 +773,16 @@ export default {
         subject: this.emailSubject || '爬虫执行结果通知',
         recipients: this.emailRecipients
       };
+      if (this.emailCondition.enabled && this.emailCondition.rules && this.emailCondition.rules.some(r => r.field)) {
+        config.condition = {
+          logic: this.emailCondition.logic || 'AND',
+          rules: this.emailCondition.rules.filter(r => r.field).map(r => ({
+            field: r.field,
+            operator: r.operator || 'eq',
+            value: r.value
+          }))
+        };
+      }
       this.tempConfigForm.postProcessor = JSON.stringify(config);
     },
 
@@ -729,6 +809,14 @@ export default {
             if (extractStep.fields) {
               this.extractFields = Object.entries(extractStep.fields).map(([alias, path]) => ({ alias, path }));
             }
+            if (emailStep.condition) {
+              const cond = emailStep.condition;
+              if (cond.rules && Array.isArray(cond.rules)) {
+                this.emailCondition = { enabled: true, logic: cond.logic || 'AND', rules: cond.rules };
+              } else if (cond.field) {
+                this.emailCondition = { enabled: true, logic: 'AND', rules: [{ field: cond.field, operator: cond.operator || 'eq', value: cond.value || '' }] };
+              }
+            }
           } else {
             this.postProcessorType = 'manual';
           }
@@ -738,6 +826,14 @@ export default {
             this.postProcessorType = 'sendEmail';
             this.emailSubject = obj.subject || '';
             this.emailRecipients = Array.isArray(obj.recipients) ? obj.recipients : [];
+            if (obj.condition) {
+              const cond = obj.condition;
+              if (cond.rules && Array.isArray(cond.rules)) {
+                this.emailCondition = { enabled: true, logic: cond.logic || 'AND', rules: cond.rules };
+              } else if (cond.field) {
+                this.emailCondition = { enabled: true, logic: 'AND', rules: [{ field: cond.field, operator: cond.operator || 'eq', value: cond.value || '' }] };
+              }
+            }
           } else if (obj.type === 'jsonExtract') {
             this.postProcessorType = 'jsonExtract';
           } else {
@@ -765,9 +861,24 @@ export default {
       this.extractFields.forEach(f => {
         if (f.alias && f.path) fields[f.alias] = f.path;
       });
+      const emailStep = {
+        type: 'sendEmail',
+        subject: this.emailSubject || '爬虫执行结果通知',
+        recipients: this.emailRecipients
+      };
+      if (this.emailCondition.enabled && this.emailCondition.rules && this.emailCondition.rules.some(r => r.field)) {
+        emailStep.condition = {
+          logic: this.emailCondition.logic || 'AND',
+          rules: this.emailCondition.rules.filter(r => r.field).map(r => ({
+            field: r.field,
+            operator: r.operator || 'eq',
+            value: r.value
+          }))
+        };
+      }
       const config = [
         { type: 'jsonExtract', fields },
-        { type: 'sendEmail', subject: this.emailSubject || '爬虫执行结果通知', recipients: this.emailRecipients }
+        emailStep
       ];
       this.tempConfigForm.postProcessor = JSON.stringify(config);
     },
@@ -795,6 +906,20 @@ export default {
         return '{"type":"jsonExtract","fields":{"\u65e5\u671f":"data.todayRecord[0].date","\u9898\u53f7":"data.todayRecord[0].question.questionFrontendId"}}';
       }
       return '{"type":"..."}';
+    },
+
+    // 添加一条条件规则
+    addConditionRule(mode) {
+      this.emailCondition.rules.push({ field: '', operator: 'eq', value: '' });
+      if (mode === 'chained') this.syncChainedPostProcessor();
+      else this.syncEmailPostProcessor();
+    },
+
+    // 删除一条条件规则
+    removeConditionRule(idx, mode) {
+      this.emailCondition.rules.splice(idx, 1);
+      if (mode === 'chained') this.syncChainedPostProcessor();
+      else this.syncEmailPostProcessor();
     }
   }
 }
@@ -978,6 +1103,109 @@ export default {
 .json-preview code {
   color: #409EFF;
   font-family: monospace;
+}
+
+/* 链式后置处理器 */
+.chain-tip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ecf5ff;
+  color: #409EFF;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.chain-section {
+  border: 1px solid #e1f3d8;
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: #fff;
+}
+
+.chain-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #67C23A;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.extract-field-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.field-arrow {
+  color: #909399;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* 多条件规则行 */
+.condition-rule-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.condition-connector {
+  font-size: 13px;
+  font-weight: 600;
+  color: #E6A23C;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* 发送条件区域 */
+.condition-block {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #fdf6ec;
+  border: 1px solid #faecd8;
+  border-radius: 6px;
+}
+
+.condition-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.condition-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #E6A23C;
+}
+
+.condition-hint {
+  font-size: 12px;
+  color: #909399;
+}
+
+.condition-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.condition-label-text {
+  font-size: 13px;
+  color: #606266;
+  flex-shrink: 0;
 }
 
 .dialog-footer {
