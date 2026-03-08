@@ -1,10 +1,60 @@
 <template>
   <div class="dashboard-container">
-    <!-- 顶部欢迎区 -->
-    <div class="welcome-section">
-      <div class="welcome-text">
-        <h1 class="welcome-title">孙老六的后花园 🌿</h1>
-        <p class="welcome-date">{{ today }}</p>
+    <!-- 全景 Banner 欢迎区 -->
+    <div class="hero-banner" :style="picUrl ? { backgroundImage: 'url(' + picUrl + ')' } : {}">
+      <!-- 暗色渐变遮罩 -->
+      <div class="hero-overlay" v-if="picUrl"></div>
+      
+      <div class="hero-content">
+        <!-- 左侧欢迎信息 -->
+        <div class="welcome-text" :class="{'glass-text': picUrl}">
+          <h1 class="welcome-title">孙老六的后花园 🌿</h1>
+          <p class="welcome-date">{{ today }}</p>
+        </div>
+        
+        <!-- 右侧壁纸配置或信息面板 -->
+        <div class="hero-pic-info">
+          <!-- 数据展示状态 -->
+          <div v-if="picUrl" class="pic-info-glass">
+             <div class="pic-header">
+                <h3>🖼️ 探索今日视界</h3>
+                <el-button type="text" size="mini" @click="clearPicConfigId" class="glass-btn">更换配置</el-button>
+             </div>
+             <p class="pic-desc">{{ picData['📌 照片背后的故事'] || picData['📌 图片分辨率'] || '高清视觉盛宴，享受此刻宁静' }}</p>
+             <p class="pic-time" v-if="picExecuteTime">更新时间：{{ picExecuteTime }}</p>
+          </div>
+
+          <!-- 加载状态 -->
+          <div v-else-if="loadingPic" class="pic-empty-state">
+             <i class="el-icon-loading" style="font-size:32px;"></i>
+          </div>
+
+          <!-- 未配置状态 -->
+          <div v-else-if="!picConfigId" class="pic-empty-state">
+            <div class="pic-empty-content">
+              <i class="el-icon-picture-outline"></i>
+              <span>开启沉浸式画廊体验</span>
+              <div class="config-input-row" style="margin-top: 15px;">
+                <el-input
+                  v-model="inputPicConfigId"
+                  placeholder="粘贴壁纸提取爬虫 ID"
+                  size="small"
+                  clearable
+                />
+                <el-button type="primary" size="small" @click="savePicConfigId">确定</el-button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 找不到图片 -->
+          <div v-else class="pic-empty-state error-state">
+            <div class="pic-empty-content">
+              <i class="el-icon-warning-outline"></i>
+              <span>没有获取到图片链接</span>
+              <el-button type="text" size="mini" @click="clearPicConfigId" style="margin-top:10px;">更换爬虫配置</el-button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -75,6 +125,8 @@
           </div>
         </div>
       </div>
+
+
     </div>
   </div>
 </template>
@@ -89,7 +141,13 @@ export default {
       inputConfigId: '',
       loading: false,
       executeTime: '',
-      question: {}
+      question: {},
+      
+      picConfigId: '',
+      inputPicConfigId: '',
+      loadingPic: false,
+      picExecuteTime: '',
+      picData: {}
     }
   },
   created() {
@@ -98,13 +156,39 @@ export default {
     if (this.configId) {
       this.fetchLatest()
     }
+    
+    this.picConfigId = localStorage.getItem('pic_crawler_config_id') || ''
+    if (this.picConfigId) {
+      this.fetchLatestPic()
+    }
   },
   computed: {
     lcLink() {
       const slug = this.question['链接slug'] || this.question['链接']
       if (!slug) return null
-      // 如果已经是完整 URL 直接返回；否则拼接 leetcode.cn
       return slug.startsWith('http') ? slug : `https://leetcode.cn/problems/${slug}/`
+    },
+    picUrl() {
+      // 1. 先尝试直接匹配预设的几个可能的名字
+      let urlRaw = this.picData['🖼️ 今日纯享极美壁纸'] || this.picData['🖼️ 今日纯享绝美壁纸'] || this.picData['🖼️ 今日必应壁纸'] || this.picData['🖼️ 今日天文影像'] || this.picData['🖼️ 治愈系随机配图'];
+      
+      // 2. 如果没匹配到，遍历整个对象寻找可能的图片链接片段
+      if (!urlRaw) {
+         for (const key in this.picData) {
+            const val = this.picData[key] ? String(this.picData[key]) : '';
+            // 判断是否长得像包含链接的样子 (http...)
+            if (val.includes('http')) {
+               urlRaw = val;
+               break;
+            }
+         }
+      }
+      
+      if (!urlRaw) return '';
+      
+      // 3. 尝试从 markdown [xxx](url) 或 ![xxx](url) 中提取纯 url
+      const match = urlRaw.match(/\]\((.*?)\)/);
+      return match ? match[1] : urlRaw;
     }
   },
   methods: {
@@ -126,6 +210,21 @@ export default {
       this.question = {}
       this.executeTime = ''
       localStorage.removeItem('lc_crawler_config_id')
+    },
+    
+    savePicConfigId() {
+      if (!this.inputPicConfigId.trim()) return
+      this.picConfigId = this.inputPicConfigId.trim()
+      localStorage.setItem('pic_crawler_config_id', this.picConfigId)
+      this.fetchLatestPic()
+    },
+
+    clearPicConfigId() {
+      this.picConfigId = ''
+      this.inputPicConfigId = ''
+      this.picData = {}
+      this.picExecuteTime = ''
+      localStorage.removeItem('pic_crawler_config_id')
     },
 
     fetchLatest() {
@@ -151,6 +250,32 @@ export default {
         this.question = {}
       }).finally(() => {
         this.loading = false
+      })
+    },
+    
+    fetchLatestPic() {
+      this.loadingPic = true
+      this.api({
+        url: '/crawler/record/latest',
+        method: 'get',
+        params: { configId: this.picConfigId }
+      }).then(data => {
+        if (!data || !data.resultData) {
+          this.picData = {}
+          return
+        }
+        try {
+          this.picData = JSON.parse(data.resultData)
+        } catch {
+          this.picData = {}
+        }
+        this.picExecuteTime = data.executeTime
+          ? data.executeTime.replace('T', ' ').substring(0, 16)
+          : ''
+      }).catch(() => {
+        this.picData = {}
+      }).finally(() => {
+        this.loadingPic = false
       })
     },
 
@@ -344,6 +469,152 @@ export default {
   color: #c0c4cc;
 }
 .change-btn:hover {
+  color: #909399;
+}
+
+/* 全景英雄横幅 */
+.hero-banner {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  background-color: #e4e7ed;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 16px;
+  margin-bottom: 32px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.6) 100%);
+  pointer-events: none;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 0 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.welcome-text.glass-text {
+  text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+}
+.welcome-text.glass-text .welcome-title {
+  color: #ffffff;
+}
+.welcome-text.glass-text .welcome-date {
+  color: rgba(255,255,255,0.9);
+}
+
+.hero-pic-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 340px;
+  max-width: 420px;
+}
+
+.pic-info-glass {
+  background: rgba(40,40,40,0.35);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 24px 32px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  transform: translateY(12px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s ease;
+}
+
+.hero-banner:hover .pic-info-glass {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.hero-banner:hover .pic-info-glass:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+}
+
+.pic-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.pic-header h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.glass-btn {
+  color: rgba(255,255,255,0.7) !important;
+  padding: 0 !important;
+}
+.glass-btn:hover {
+  color: rgba(255,255,255,1) !important;
+}
+
+.pic-desc {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 15px;
+  margin: 0 0 16px 0;
+  line-height: 1.6;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.pic-time {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.pic-empty-state {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 40px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.pic-empty-state.error-state {
+  background: rgba(255, 240, 240, 0.85);
+}
+
+.pic-empty-content {
+  text-align: center;
+  color: #606266;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.pic-empty-content i {
+  font-size: 36px;
   color: #909399;
 }
 </style>
