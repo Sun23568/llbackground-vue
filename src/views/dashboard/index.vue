@@ -127,6 +127,63 @@
       </div>
 
 
+      <!-- 微博热搜卡片 -->
+      <div class="weibo-card">
+        <!-- 卡片头部 -->
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="wb-logo"><i class="el-icon-odometer"></i></div>
+            <div>
+              <div class="card-title">微博实时热搜</div>
+              <div class="card-subtitle">关注全网新鲜事</div>
+            </div>
+          </div>
+          <span class="difficulty-badge" style="background:#fff0f0; color:#e02433;">HOT</span>
+        </div>
+
+        <!-- 加载中 -->
+        <div v-if="loadingWeibo" class="lc-state">
+          <i class="el-icon-loading"></i>
+          <span>加载中...</span>
+        </div>
+
+        <!-- 未配置 -->
+        <div v-else-if="!weiboConfigId" class="lc-state lc-empty">
+          <i class="el-icon-info"></i>
+          <span>请输入爬虫配置 ID 以展示热搜</span>
+          <div class="config-input-row">
+            <el-input
+              v-model="inputWeiboConfigId"
+              placeholder="粘贴热搜爬虫配置 ID"
+              size="small"
+              clearable
+              style="width: 280px"
+            />
+            <el-button type="primary" size="small" @click="saveWeiboConfigId">确认</el-button>
+          </div>
+        </div>
+
+        <!-- 无数据 -->
+        <div v-else-if="weiboList.length === 0" class="lc-state lc-empty">
+          <i class="el-icon-document-delete"></i>
+          <span>暂无执行记录，请先执行一次爬虫</span>
+          <el-button type="text" size="mini" @click="clearWeiboConfigId">更换配置 ID</el-button>
+        </div>
+
+        <!-- 热搜列表内容 -->
+        <div v-else class="wb-content">
+          <ul class="wb-list">
+            <li v-for="(item, index) in weiboList" :key="index" class="wb-list-item">
+               <span class="wb-rank" :class="{'top-3': index < 3}">{{ index + 1 }}</span>
+               <a :href="item.link" target="_blank" class="wb-title-link">{{ item.title }}</a>
+            </li>
+          </ul>
+          <div class="card-footer">
+            <span class="update-time" v-if="weiboExecuteTime">更新于 {{ weiboExecuteTime }}</span>
+            <el-button type="text" size="mini" @click="clearWeiboConfigId" class="change-btn">更换配置</el-button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -147,20 +204,19 @@ export default {
       inputPicConfigId: '',
       loadingPic: false,
       picExecuteTime: '',
-      picData: {}
+      picData: {},
+      
+      weiboConfigId: '',
+      inputWeiboConfigId: '',
+      loadingWeibo: false,
+      weiboExecuteTime: '',
+      weiboData: {}
     }
   },
   created() {
     this.today = this.formatDate(new Date())
-    this.configId = localStorage.getItem('lc_crawler_config_id') || ''
-    if (this.configId) {
-      this.fetchLatest()
-    }
-    
-    this.picConfigId = localStorage.getItem('pic_crawler_config_id') || ''
-    if (this.picConfigId) {
-      this.fetchLatestPic()
-    }
+    // 从数据库一次性加载所有配置
+    this.loadSettingsFromDB()
   },
   computed: {
     lcLink() {
@@ -189,6 +245,22 @@ export default {
       // 3. 尝试从 markdown [xxx](url) 或 ![xxx](url) 中提取纯 url
       const match = urlRaw.match(/\]\((.*?)\)/);
       return match ? match[1] : urlRaw;
+    },
+    weiboList() {
+      // 将爬虫保存的含有超链接 Markdown 语法的值处理成数组
+      if (!this.weiboData || Object.keys(this.weiboData).length === 0) return []
+      const list = []
+      for (const [key, value] of Object.entries(this.weiboData)) {
+         let title = value
+         let link = ''
+         const match = String(value).match(/\[(.*?)\]\((.*?)\)/)
+         if (match) {
+            title = match[1]
+            link = match[2]
+         }
+         list.push({ rank: key, title, link })
+      }
+      return list
     }
   },
   methods: {
@@ -200,7 +272,7 @@ export default {
     saveConfigId() {
       if (!this.inputConfigId.trim()) return
       this.configId = this.inputConfigId.trim()
-      localStorage.setItem('lc_crawler_config_id', this.configId)
+      this.saveSetting('dashboard.lc_crawler_config_id', this.configId)
       this.fetchLatest()
     },
 
@@ -209,13 +281,13 @@ export default {
       this.inputConfigId = ''
       this.question = {}
       this.executeTime = ''
-      localStorage.removeItem('lc_crawler_config_id')
+      this.saveSetting('dashboard.lc_crawler_config_id', '')
     },
     
     savePicConfigId() {
       if (!this.inputPicConfigId.trim()) return
       this.picConfigId = this.inputPicConfigId.trim()
-      localStorage.setItem('pic_crawler_config_id', this.picConfigId)
+      this.saveSetting('dashboard.pic_crawler_config_id', this.picConfigId)
       this.fetchLatestPic()
     },
 
@@ -224,7 +296,45 @@ export default {
       this.inputPicConfigId = ''
       this.picData = {}
       this.picExecuteTime = ''
-      localStorage.removeItem('pic_crawler_config_id')
+      this.saveSetting('dashboard.pic_crawler_config_id', '')
+    },
+    
+    saveWeiboConfigId() {
+      if (!this.inputWeiboConfigId.trim()) return
+      this.weiboConfigId = this.inputWeiboConfigId.trim()
+      this.saveSetting('dashboard.weibo_crawler_config_id', this.weiboConfigId)
+      this.fetchLatestWeibo()
+    },
+
+    clearWeiboConfigId() {
+      this.weiboConfigId = ''
+      this.inputWeiboConfigId = ''
+      this.weiboData = {}
+      this.weiboExecuteTime = ''
+      this.saveSetting('dashboard.weibo_crawler_config_id', '')
+    },
+
+    // 从数据库加载所有配置
+    loadSettingsFromDB() {
+      this.api({ url: '/setting/all', method: 'get' }).then(settings => {
+        if (!settings) return
+        const lc    = settings['dashboard.lc_crawler_config_id'] || ''
+        const pic   = settings['dashboard.pic_crawler_config_id'] || ''
+        const weibo = settings['dashboard.weibo_crawler_config_id'] || ''
+        
+        if (lc) { this.configId = lc; this.fetchLatest() }
+        if (pic) { this.picConfigId = pic; this.fetchLatestPic() }
+        if (weibo) { this.weiboConfigId = weibo; this.fetchLatestWeibo() }
+      }).catch(() => {})
+    },
+
+    // 保存单个配置到数据库
+    saveSetting(key, value) {
+      this.api({
+        url: '/setting/save',
+        method: 'post',
+        data: { cfgKey: key, cfgValue: value }
+      }).catch(() => {})
     },
 
     fetchLatest() {
@@ -278,6 +388,32 @@ export default {
         this.loadingPic = false
       })
     },
+    
+    fetchLatestWeibo() {
+      this.loadingWeibo = true
+      this.api({
+        url: '/crawler/record/latest',
+        method: 'get',
+        params: { configId: this.weiboConfigId }
+      }).then(data => {
+        if (!data || !data.resultData) {
+          this.weiboData = {}
+          return
+        }
+        try {
+          this.weiboData = JSON.parse(data.resultData)
+        } catch {
+          this.weiboData = {}
+        }
+        this.weiboExecuteTime = data.executeTime
+          ? data.executeTime.replace('T', ' ').substring(0, 16)
+          : ''
+      }).catch(() => {
+        this.weiboData = {}
+      }).finally(() => {
+        this.loadingWeibo = false
+      })
+    },
 
     difficultyClass(d) {
       const map = { Easy: 'easy', Simple: 'easy', Medium: 'medium', Hard: 'hard', '简单': 'easy', '中等': 'medium', '困难': 'hard' }
@@ -329,6 +465,7 @@ export default {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   transition: box-shadow 0.2s;
+  align-self: start;
 }
 
 .leetcode-card:hover {
@@ -616,5 +753,90 @@ export default {
 .pic-empty-content i {
   font-size: 36px;
   color: #909399;
+}
+
+/* 微博热搜卡片 */
+.weibo-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+  align-self: start;
+}
+
+.weibo-card:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.13);
+}
+
+.wb-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #ff4d4f, #e02433);
+  color: #fff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wb-content {
+  padding: 8px 20px 16px;
+}
+
+.wb-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.wb-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid #f5f5f5;
+  transition: background 0.15s;
+}
+
+.wb-list-item:last-child {
+  border-bottom: none;
+}
+
+.wb-rank {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: #f0f2f5;
+  color: #909399;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wb-rank.top-3 {
+  background: linear-gradient(135deg, #ff4d4f, #e02433);
+  color: #fff;
+}
+
+.wb-title-link {
+  color: #303133;
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 1.4;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+.wb-title-link:hover {
+  color: #e02433;
 }
 </style>
