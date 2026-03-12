@@ -12,13 +12,12 @@
           <p class="welcome-date">{{ today }}</p>
         </div>
         
-        <!-- 右侧壁纸配置或信息面板 -->
+        <!-- 右侧壁纸信息面板 -->
         <div class="hero-pic-info">
           <!-- 数据展示状态 -->
           <div v-if="picUrl" class="pic-info-glass">
              <div class="pic-header">
                 <h3>🖼️ 探索今日视界</h3>
-                <el-button type="text" size="mini" @click="clearPicConfigId" class="glass-btn">更换配置</el-button>
              </div>
              <p class="pic-desc">{{ picData['📌 照片背后的故事'] || picData['📌 图片分辨率'] || '高清视觉盛宴，享受此刻宁静' }}</p>
              <p class="pic-time" v-if="picExecuteTime">更新时间：{{ picExecuteTime }}</p>
@@ -29,29 +28,11 @@
              <i class="el-icon-loading" style="font-size:32px;"></i>
           </div>
 
-          <!-- 未配置状态 -->
-          <div v-else-if="!picConfigId" class="pic-empty-state">
+          <!-- 未配置/找不到图片 -->
+          <div v-else class="pic-empty-state">
             <div class="pic-empty-content">
               <i class="el-icon-picture-outline"></i>
-              <span>开启沉浸式画廊体验</span>
-              <div class="config-input-row" style="margin-top: 15px;">
-                <el-input
-                  v-model="inputPicConfigId"
-                  placeholder="粘贴壁纸提取爬虫 ID"
-                  size="small"
-                  clearable
-                />
-                <el-button type="primary" size="small" @click="savePicConfigId">确定</el-button>
-              </div>
-            </div>
-          </div>
-
-          <!-- 找不到图片 -->
-          <div v-else class="pic-empty-state error-state">
-            <div class="pic-empty-content">
-              <i class="el-icon-warning-outline"></i>
-              <span>没有获取到图片链接</span>
-              <el-button type="text" size="mini" @click="clearPicConfigId" style="margin-top:10px;">更换爬虫配置</el-button>
+              <span>今日壁纸暂未加载</span>
             </div>
           </div>
         </div>
@@ -84,27 +65,10 @@
           <span>加载中...</span>
         </div>
 
-        <!-- 未配置 -->
-        <div v-else-if="!configId" class="lc-state lc-empty">
-          <i class="el-icon-info"></i>
-          <span>请输入爬虫配置 ID 以展示每日一题</span>
-          <div class="config-input-row">
-            <el-input
-              v-model="inputConfigId"
-              placeholder="粘贴爬虫配置 ID"
-              size="small"
-              clearable
-              style="width: 280px"
-            />
-            <el-button type="primary" size="small" @click="saveConfigId">确认</el-button>
-          </div>
-        </div>
-
-        <!-- 无数据 -->
-        <div v-else-if="!question.题号" class="lc-state lc-empty">
-          <i class="el-icon-document-delete"></i>
-          <span>暂无执行记录，请先执行一次爬虫</span>
-          <el-button type="text" size="mini" @click="clearConfigId">更换配置 ID</el-button>
+        <!-- 未配置/无数据 -->
+        <div v-else-if="!configId || !question.题号" class="lc-state lc-empty">
+          <i class="el-icon-document"></i>
+          <span>暂无每日一题数据</span>
         </div>
 
         <!-- 题目内容 -->
@@ -121,7 +85,6 @@
           </a>
           <div class="card-footer">
             <span class="update-time" v-if="executeTime">更新于 {{ executeTime }}</span>
-            <el-button type="text" size="mini" @click="clearConfigId" class="change-btn">更换配置</el-button>
           </div>
         </div>
       </div>
@@ -147,27 +110,10 @@
           <span>加载中...</span>
         </div>
 
-        <!-- 未配置 -->
-        <div v-else-if="!weiboConfigId" class="lc-state lc-empty">
-          <i class="el-icon-info"></i>
-          <span>请输入爬虫配置 ID 以展示热搜</span>
-          <div class="config-input-row">
-            <el-input
-              v-model="inputWeiboConfigId"
-              placeholder="粘贴热搜爬虫配置 ID"
-              size="small"
-              clearable
-              style="width: 280px"
-            />
-            <el-button type="primary" size="small" @click="saveWeiboConfigId">确认</el-button>
-          </div>
-        </div>
-
-        <!-- 无数据 -->
-        <div v-else-if="weiboList.length === 0" class="lc-state lc-empty">
-          <i class="el-icon-document-delete"></i>
-          <span>暂无执行记录，请先执行一次爬虫</span>
-          <el-button type="text" size="mini" @click="clearWeiboConfigId">更换配置 ID</el-button>
+        <!-- 未配置/无数据 -->
+        <div v-else-if="!weiboConfigId || weiboList.length === 0" class="lc-state lc-empty">
+          <i class="el-icon-hot-water"></i>
+          <span>暂无热搜数据</span>
         </div>
 
         <!-- 热搜列表内容 -->
@@ -180,7 +126,6 @@
           </ul>
           <div class="card-footer">
             <span class="update-time" v-if="weiboExecuteTime">更新于 {{ weiboExecuteTime }}</span>
-            <el-button type="text" size="mini" @click="clearWeiboConfigId" class="change-btn">更换配置</el-button>
           </div>
         </div>
       </div>
