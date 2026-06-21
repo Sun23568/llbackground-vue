@@ -1,0 +1,324 @@
+/* Standalone drawPro layout: full canvas with a floating expandable tool rail. */
+:root {
+  --rail-collapsed: 64px;
+  --rail-expanded: min(440px, calc(100vw - 28px));
+  --rail-gap: 14px;
+}
+
+.app-shell {
+  position: relative;
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.workspace {
+  display: grid;
+  grid-template-rows: 52px minmax(0, 1fr);
+  width: 100vw;
+  height: 100vh;
+  min-width: 0;
+  min-height: 0;
+}
+
+.topbar {
+  min-height: 52px;
+  padding: 7px 12px 7px 88px;
+  background: rgba(251, 250, 247, .94);
+  border-bottom: 1px solid rgba(37, 48, 49, .12);
+  backdrop-filter: blur(12px);
+}
+
+.title-input {
+  height: 34px;
+}
+
+.topbar-actions {
+  gap: 4px;
+}
+
+.topbar-actions button {
+  width: 34px;
+  height: 34px;
+}
+
+.zoom-readout {
+  width: 50px;
+}
+
+.tool-sidebar {
+  position: absolute;
+  z-index: 30;
+  top: var(--rail-gap);
+  bottom: var(--rail-gap);
+  left: var(--rail-gap);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: var(--rail-collapsed);
+  min-width: 0;
+  min-height: 0;
+  padding: 8px;
+  overflow: hidden;
+  color: #e9eee8;
+  background: rgba(37, 48, 49, .94);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 10px;
+  box-shadow: 0 18px 42px rgba(20, 27, 28, .28);
+  backdrop-filter: blur(14px);
+  transition: width .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.tool-sidebar:hover,
+.tool-sidebar:focus-within {
+  width: var(--rail-expanded);
+  background: rgba(37, 48, 49, .98);
+  box-shadow: 0 22px 54px rgba(20, 27, 28, .36);
+}
+
+.sidebar-header {
+  display: grid;
+  gap: 2px;
+  min-height: 42px;
+  padding: 5px 4px 8px;
+  overflow: hidden;
+}
+
+.sidebar-title {
+  overflow: hidden;
+  font-size: 15px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-subtitle {
+  overflow: hidden;
+  opacity: 0;
+  max-height: 0;
+  font-size: 11px;
+  line-height: 1.35;
+  transition: opacity .14s ease, max-height .14s ease;
+}
+
+.tool-sidebar:hover .sidebar-subtitle,
+.tool-sidebar:focus-within .sidebar-subtitle {
+  opacity: .72;
+  max-height: 34px;
+}
+
+.element-group {
+  grid-template-columns: 1fr;
+  gap: 7px;
+  padding: 6px;
+}
+
+.tool-sidebar:hover .element-group,
+.tool-sidebar:focus-within .element-group {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.element-button {
+  width: 100%;
+  height: 40px;
+}
+
+.element-button:hover svg {
+  transform: none;
+}
+
+.element-button span {
+  display: none;
+}
+
+.library-panel,
+.save-panel {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity .16s ease, max-height .18s ease, transform .16s ease;
+}
+
+.tool-sidebar:hover .library-panel,
+.tool-sidebar:focus-within .library-panel,
+.tool-sidebar:hover .save-panel,
+.tool-sidebar:focus-within .save-panel {
+  opacity: 1;
+  max-height: 1000px;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.library-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  min-height: 0;
+}
+
+.tool-sidebar:hover .library-panel,
+.tool-sidebar:focus-within .library-panel {
+  flex: 1 1 auto;
+}
+
+.library-section,
+.save-panel {
+  border-radius: 8px;
+}
+
+.library-section {
+  max-height: none;
+  min-height: 0;
+  padding: 10px;
+  overflow: visible;
+}
+
+.library-section:last-child {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.library-heading {
+  min-height: 24px;
+}
+
+.workbench-list,
+.collection-list {
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(220, 233, 226, .55) rgba(255, 255, 255, .08);
+}
+
+.workbench-list::-webkit-scrollbar,
+.collection-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.workbench-list::-webkit-scrollbar-track,
+.collection-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, .08);
+  border-radius: 999px;
+}
+
+.workbench-list::-webkit-scrollbar-thumb,
+.collection-list::-webkit-scrollbar-thumb {
+  background: rgba(220, 233, 226, .55);
+  border-radius: 999px;
+}
+
+.workbench-list {
+  max-height: 120px;
+}
+
+.collection-list {
+  flex: 0 0 auto;
+  min-height: 0;
+  max-height: none;
+  padding-right: 4px;
+  overflow: visible;
+}
+
+.collection-create-actions,
+.collection-folder-actions {
+  grid-template-columns: 1fr 1fr;
+}
+
+.collection-create-actions button,
+.collection-folder-actions button {
+  height: 34px;
+}
+
+.asset-chip {
+  min-height: 34px;
+  border-radius: 8px;
+}
+
+.collection-card {
+  gap: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  min-width: 0;
+  margin-right: 0;
+  max-width: 100%;
+}
+
+.collection-list .collection-card {
+  width: auto;
+}
+
+.collection-card-head {
+  grid-template-columns: minmax(0, 1fr) 28px;
+  min-height: 32px;
+}
+
+.collection-toggle {
+  grid-template-columns: 16px 12px minmax(0, 1fr) max-content;
+  gap: 8px;
+  height: 32px;
+  min-width: 0;
+}
+
+.collection-toggle strong {
+  min-width: 0;
+}
+
+.collection-toggle em {
+  flex-shrink: 0;
+  min-width: 20px;
+  text-align: right;
+}
+
+.collection-delete {
+  width: 28px;
+  height: 28px;
+}
+
+.collection-item-row {
+  min-height: 30px;
+}
+
+.collection-item-row button,
+.collection-items span {
+  height: 30px;
+  padding: 0 9px;
+  border-radius: 7px;
+}
+
+.empty-library-text {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+}
+
+.save-panel {
+  flex-shrink: 0;
+  padding: 10px;
+}
+
+.canvas-viewport {
+  cursor: crosshair;
+}
+
+@media (max-width: 700px) {
+  :root {
+    --rail-expanded: min(400px, calc(100vw - 28px));
+  }
+
+  .topbar {
+    padding-left: 82px;
+    gap: 6px;
+  }
+
+  .title-input {
+    width: min(190px, 38vw);
+  }
+
+  .zoom-readout {
+    display: none;
+  }
+}

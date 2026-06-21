@@ -57,6 +57,27 @@ export const asyncRouterMap = [
       }
     ]
   },
+  {
+    path: '/drawpro',
+    component: Layout,
+    redirect: '/drawpro/board',
+    name: 'drawPro',
+    meta: { title: 'drawPro', icon: 'drawpro-line' },
+    children: [
+      {
+        path: 'board',
+        name: 'drawProBoard',
+        component: _import('drawpro/DrawPro'),
+        meta: {
+          title: 'drawPro',
+          icon: 'drawpro-line',
+          openInNewTab: true,
+          externalPath: '/drawpro/index.html'
+        },
+        menu: 'drawPro'
+      }
+    ]
+  },
   // ========== AI模块 ==========
   {
     path: '/ai',
