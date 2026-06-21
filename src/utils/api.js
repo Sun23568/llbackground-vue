@@ -2,6 +2,14 @@ import axios from 'axios'
 import {Message} from 'element-ui'
 import {getToken} from '@/utils/auth'
 import store from '../store'
+
+function createApiError(message, code, data) {
+  const error = new Error(message || '请求失败')
+  error.code = code || 'error'
+  error.msg = message || '请求失败'
+  error.data = data || null
+  return error
+}
 // 创建axios实例
 const service = axios.create({
   baseURL:  '/api', // api的base_url
@@ -17,7 +25,7 @@ service.interceptors.request.use(config => {
 }, error => {
   // Do something with request error
   console.error(error) // for debug
-  Promise.reject(error)
+  return Promise.reject(error)
 })
 // respone拦截器
 service.interceptors.response.use(
@@ -31,17 +39,18 @@ service.interceptors.response.use(
         type: 'error',
         duration: 3 * 1000
       })
-      return Promise.reject(res)
+      return Promise.reject(createApiError(res.msg, res.code, res.data))
     }
   },
   error => {
+    const responseData = error.response?.data || {}
     if (error.response) {
       const {status, message} = error.response;
       switch (status) {
         case 401:
           Message({
             showClose: true,
-            message: error.response.data?.message || message,
+            message: responseData.message || responseData.msg || message,
             type: 'error',
             duration: 500,
             onClose: () => {
@@ -77,7 +86,7 @@ service.interceptors.response.use(
           break;
         default:
           Message({
-            message: error.response.data?.message || message || '请求失败',
+            message: responseData.message || responseData.msg || message || '请求失败',
             type: 'error',
             duration: 3 * 1000
           });
@@ -89,12 +98,11 @@ service.interceptors.response.use(
         duration: 3 * 1000
       })
     }
-    return Promise.reject({
-      code: error.response?.status || 'error',
-      msg: error.message,
-      data: null
-    });
+    return Promise.reject(createApiError(
+      responseData.message || responseData.msg || error.message,
+      error.response?.status || 'error',
+      responseData
+    ));
   }
 )
 export default service
-

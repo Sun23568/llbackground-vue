@@ -157,6 +157,23 @@ export const asyncRouterMap = [
       }
     ]
   },
+  // ========== 游戏管理 ==========
+  {
+    path: '/game',
+    component: Layout,
+    redirect: '/game/levels',
+    name: '游戏管理',
+    meta: { title: '游戏管理', icon: 'game-line' },
+    children: [
+      {
+        path: 'levels',
+        name: '关卡管理',
+        component: _import('game/LevelManage'),
+        meta: { title: '关卡管理', icon: 'level-line' },
+        menu: 'gameLevel'
+      }
+    ]
+  },
   // ========== 文件管理 ==========
   {
     path: '/file-manage',

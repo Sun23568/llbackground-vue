@@ -15,6 +15,10 @@ router.beforeEach((to, from, next) => {
       //已经登录但是store内没有userId,说明可能是重新刷新的页面,因此重新获取用户信息
       store.dispatch('GetInfo').then(() => {
         next({...to})
+      }).catch(() => {
+        store.dispatch('FedLogOut').then(() => {
+          next('/login')
+        })
       })
     } else {
       next()
